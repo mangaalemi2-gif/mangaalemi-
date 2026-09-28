@@ -39,6 +39,12 @@ function generateManifest() {
 }
 
 const data = generateManifest();
-const outPath = path.join(__dirname, '..', 'src', 'data', 'manga-manifest.json');
+const outDir = path.join(__dirname, '..', 'src', 'data');
+const outPath = path.join(outDir, 'manga-manifest.json');
+
+if (!fs.existsSync(outDir)) {
+  fs.mkdirSync(outDir, { recursive: true });
+}
+
 fs.writeFileSync(outPath, JSON.stringify(data, null, 2));
 console.log(`Manifest generated at ${outPath} with ${Object.keys(data).length} chapters.`);
