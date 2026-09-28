@@ -4,13 +4,13 @@ import mangaManifest from '@/data/manga-manifest.json';
 
 // Next.js App Router (Server Component) olarak dosya sisteminden görselleri listeliyoruz.
 // Production'da bu işlem manifest dosyasından okunuyor
-function getChapterImages(slug: string, chapter: string) {
+function getChapterImages(slug: string, chapter: string): string[] {
   try {
     const chapterDirName = `Chapter${chapter}`;
     const key = `${slug}/${chapterDirName}`;
     
     // @ts-ignore
-    return mangaManifest[key] || [];
+    return (mangaManifest[key] as string[]) || [];
   } catch (error) {
     console.error("Görsel okunurken hata:", error);
     return [];
@@ -20,7 +20,7 @@ function getChapterImages(slug: string, chapter: string) {
 export default async function ReaderPage({ params }: { params: Promise<{ slug: string, chapter: string }> }) {
   const resolvedParams = await params;
   const { slug, chapter } = resolvedParams;
-  const images = getChapterImages(slug, chapter);
+  const images: string[] = getChapterImages(slug, chapter);
   
   const currentChapter = parseInt(chapter);
   const prevChapter = currentChapter > 1 ? currentChapter - 1 : null;
