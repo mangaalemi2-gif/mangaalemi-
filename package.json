@@ -10,21 +10,20 @@
     "db:migrate": "wrangler d1 migrations apply mangaalemi"
   },
   "dependencies": {
-    "@lucia-auth/adapter-sqlite": "^3.0.0",
     "drizzle-orm": "^0.30.0",
     "framer-motion": "^11.0.8",
     "lucia": "^3.0.0",
-    "lucide-react": "^0.358.0",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest"
+    "lucide-react": "^0.469.0",
+    "next": "^15.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.13.16",
     "@cloudflare/workers-types": "^4.20240320.0",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "autoprefixer": "^10.0.1",
     "drizzle-kit": "^0.20.14",
     "postcss": "^8",
