@@ -1,25 +1,22 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
   "name": "mangaalemi",
-  "main": "src/index.ts",
-  "compatibility_date": "2024-03-20",
+  "pages_build_output_dir": ".vercel/output/static",
+  "compatibility_date": "2024-09-23",
   "compatibility_flags": ["nodejs_compat"],
-  
-  "r2_buckets": [
-    {
-      "binding": "STORAGE",
-      "bucket_name": "mangaalemi-storage",
-      "preview_bucket_name": "mangaalemi-storage-dev"
-    }
-  ],
-  
+
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "mangaalemi",
       "database_id": "cd5bec45-445c-46d9-9d0f-7e0a2471ef32",
-      "preview_database_id": "PREVIEW_ID", 
       "migrations_dir": "d1/migrations"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "STORAGE",
+      "bucket_name": "mangaalemi-storage"
     }
   ],
 
