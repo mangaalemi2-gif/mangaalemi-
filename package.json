@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/generate-manifest.js && next dev",
+    "prebuild": "node scripts/generate-manifest.js",
+    "build": "node scripts/generate-manifest.js && opennextjs-cloudflare build",
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "wrangler d1 migrations apply mangaalemi"

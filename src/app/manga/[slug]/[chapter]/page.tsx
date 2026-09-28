@@ -1,29 +1,16 @@
-import fs from 'fs';
-import path from 'path';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Menu, Home } from 'lucide-react';
+import mangaManifest from '@/data/manga-manifest.json';
 
 // Next.js App Router (Server Component) olarak dosya sisteminden görselleri listeliyoruz.
-// Production'da bu işlem Cloudflare D1/R2 üzerinden API ile yapılacaktır.
+// Production'da bu işlem manifest dosyasından okunuyor
 function getChapterImages(slug: string, chapter: string) {
   try {
     const chapterDirName = `Chapter${chapter}`;
-    const dirPath = path.join(process.cwd(), 'public', 'mangas', slug, chapterDirName);
+    const key = `${slug}/${chapterDirName}`;
     
-    if (!fs.existsSync(dirPath)) return [];
-
-    const files = fs.readdirSync(dirPath);
-    
-    // Sadece jpg/png vb resimleri filtreleyelim ve sıralayalım (1.jpg, 2.jpg mantığı)
-    const images = files
-      .filter(f => f.match(/\.(jpg|jpeg|png|webp)$/i))
-      .sort((a, b) => {
-        const numA = parseInt(a.split('.')[0]);
-        const numB = parseInt(b.split('.')[0]);
-        return numA - numB;
-      });
-
-    return images.map(img => `/mangas/${slug}/${chapterDirName}/${img}`);
+    // @ts-ignore
+    return mangaManifest[key] || [];
   } catch (error) {
     console.error("Görsel okunurken hata:", error);
     return [];
