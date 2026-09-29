@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy, Compass, Trophy, Mail, BookPlus, Award } from "lucide-react";
 import { useState, useEffect } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
@@ -56,6 +57,8 @@ function MessagesIcon() {
 export default function Navbar() {
   const [user, setUser] = useState<UserData | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     async function checkAuth() {
@@ -104,18 +107,23 @@ export default function Navbar() {
           </div>
 
           {/* Desktop Search */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8">
+          <form
+            onSubmit={(e) => { e.preventDefault(); router.push(`/ara${search.trim() ? `?q=${encodeURIComponent(search.trim())}` : ""}`); }}
+            className="hidden md:flex flex-1 max-w-md mx-8"
+          >
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
                 type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 className="block w-full pl-10 pr-3 py-2 border border-white/10 rounded-full bg-surface-light text-white placeholder-gray-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary sm:text-sm transition-all duration-300"
                 placeholder="Manga veya Webtoon ara..."
               />
             </div>
-          </div>
+          </form>
 
           {/* Desktop User Menu */}
           <div className="hidden md:flex items-center gap-3">
@@ -173,6 +181,21 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="md:hidden pb-4 space-y-2 border-t border-white/5 pt-4">
+            <form
+              onSubmit={(e) => { e.preventDefault(); setMobileOpen(false); router.push(`/ara${search.trim() ? `?q=${encodeURIComponent(search.trim())}` : ""}`); }}
+              className="relative"
+            >
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-white/10 rounded-xl bg-surface-light text-white placeholder-gray-400 focus:outline-none focus:border-primary sm:text-sm"
+                placeholder="Manga veya Webtoon ara..."
+              />
+            </form>
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}

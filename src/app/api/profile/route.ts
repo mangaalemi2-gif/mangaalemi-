@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
         avatarUrl: me.avatarUrl,
         coverUrl: (me as any).coverUrl ?? null,
         accent: (me as any).accent ?? null,
+        isPrivate: !!(me as any).isPrivate,
         bio: (me as any).bio ?? null,
         badge: me.badge,
         createdAt: me.createdAt,
@@ -81,7 +82,7 @@ export async function PATCH(req: NextRequest) {
     const db = getDb();
 
     const body = (await req.json()) as any;
-    const { bio, avatarUrl, coverUrl, accent, username, currentPassword, newPassword } = body;
+    const { bio, avatarUrl, coverUrl, accent, isPrivate, username, currentPassword, newPassword } = body;
 
     const [me] = await db.select().from(users).where(eq(users.id, session.userId));
     if (!me) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
@@ -105,6 +106,9 @@ export async function PATCH(req: NextRequest) {
     if (accent !== undefined) {
       if (accent && !/^#[0-9a-fA-F]{6}$/.test(accent)) return NextResponse.json({ error: "Geçersiz renk." }, { status: 400 });
       update.accent = accent || null;
+    }
+    if (isPrivate !== undefined) {
+      update.isPrivate = !!isPrivate;
     }
     if (username !== undefined && username !== me.username) {
       const clean = username.trim();

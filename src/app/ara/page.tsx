@@ -1,18 +1,44 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Shuffle, Star } from "lucide-react";
 import { MANGAS, ALL_GENRES, mangaCover } from "@/data/mangas";
 
-type Sort = "az" | "year-desc" | "year-asc";
+type Sort = "az" | "year-desc" | "year-asc" | "rating";
 
 export default function AraPage() {
-  const [q, setQ] = useState("");
+  return (
+    <Suspense fallback={<div className="py-20 text-center text-gray-400 animate-pulse">Yükleniyor...</div>}>
+      <AraInner />
+    </Suspense>
+  );
+}
+
+function AraInner() {
+  const searchParams = useSearchParams();
+  const [q, setQ] = useState(searchParams.get("q") || "");
   const [genre, setGenre] = useState<string>("all");
   const [sort, setSort] = useState<Sort>("az");
+  const [yearMin, setYearMin] = useState("");
+  const [yearMax, setYearMax] = useState("");
+  const [minRating, setMinRating] = useState("0");
+  const [averages, setAverages] = useState<Record<string, { avg: number; count: number }>>({});
   const router = useRouter();
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/ratings/averages");
+        if (res.ok) {
+          const data = (await res.json()) as any;
+          setAverages(data.averages || {});
+        }
+      } catch { /* yoksay */ }
+    }
+    load();
+  }, []);
 
   const results = useMemo(() => {
     let list = [...MANGAS];
@@ -25,11 +51,18 @@ export default function AraPage() {
       );
     }
     if (genre !== "all") list = list.filter((m) => m.genres.includes(genre));
+    const yMin = parseInt(yearMin);
+    const yMax = parseInt(yearMax);
+    if (!isNaN(yMin)) list = list.filter((m) => m.year >= yMin);
+    if (!isNaN(yMax)) list = list.filter((m) => m.year <= yMax);
+    const mr = parseFloat(minRating);
+    if (mr > 0) list = list.filter((m) => (averages[m.slug]?.avg || 0) >= mr);
     if (sort === "az") list.sort((a, b) => a.title.localeCompare(b.title, "tr"));
     if (sort === "year-desc") list.sort((a, b) => b.year - a.year);
     if (sort === "year-asc") list.sort((a, b) => a.year - b.year);
+    if (sort === "rating") list.sort((a, b) => (averages[b.slug]?.avg || 0) - (averages[a.slug]?.avg || 0));
     return list;
-  }, [q, genre, sort]);
+  }, [q, genre, sort, yearMin, yearMax, minRating, averages]);
 
   function random() {
     const pick = MANGAS[Math.floor(Math.random() * MANGAS.length)];
@@ -70,13 +103,42 @@ export default function AraPage() {
               <option value="az">A-Z</option>
               <option value="year-desc">Yeniden eskiye</option>
               <option value="year-asc">Eskiden yeniye</option>
+              <option value="rating">Puana göre</option>
             </select>
             <button
               onClick={random}
-              className="px-5 py-3 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform flex items-center gap-2 justify-center"
+              className="px-5 py-3 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform flex items-center gap-2 justify-center keep-white"
             >
               <Shuffle className="w-4 h-4" /> Rastgele
             </button>
+          </div>
+          <div className="flex flex-wrap gap-3 mt-3">
+            <input
+              value={yearMin}
+              onChange={(e) => setYearMin(e.target.value)}
+              type="number"
+              placeholder="Min yıl"
+              className="w-28 px-3 py-2 rounded-xl bg-surface border border-white/10 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50"
+            />
+            <input
+              value={yearMax}
+              onChange={(e) => setYearMax(e.target.value)}
+              type="number"
+              placeholder="Max yıl"
+              className="w-28 px-3 py-2 rounded-xl bg-surface border border-white/10 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50"
+            />
+            <select
+              value={minRating}
+              onChange={(e) => setMinRating(e.target.value)}
+              className="px-3 py-2 rounded-xl bg-surface border border-white/10 text-sm text-white focus:outline-none focus:border-primary/50"
+              title="Minimum puan"
+            >
+              <option value="0">Puan fark etmez</option>
+              <option value="5">5+ puan</option>
+              <option value="7">7+ puan</option>
+              <option value="8">8+ puan</option>
+              <option value="9">9+ puan</option>
+            </select>
           </div>
         </div>
       </div>
@@ -99,7 +161,10 @@ export default function AraPage() {
                     ))}
                   </div>
                   <h3 className="font-bold text-white line-clamp-2">{m.title}</h3>
-                  <p className="text-xs text-gray-400 mt-1">{m.author} • {m.year}</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {m.author} • {m.year}
+                    {averages[m.slug]?.count ? <span className="text-yellow-400 font-bold"> • ★ {averages[m.slug].avg}</span> : null}
+                  </p>
                 </div>
                 <div className="w-full h-full bg-surface group-hover:scale-110 transition-transform duration-500">
                   <img src={mangaCover(m)} alt={m.title} className="w-full h-full object-cover" loading="lazy" />

@@ -9,6 +9,7 @@ import RatingWidget from "@/components/RatingWidget";
 import SeriesFollowButton from "@/components/SeriesFollowButton";
 import Recommendations from "@/components/Recommendations";
 import MyListButton from "@/components/MyListButton";
+import MangaChapters from "@/components/MangaChapters";
 
 // Manifest'ten bölüm listesi çıkar
 function getChapters(slug: string) {
@@ -136,30 +137,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
           <span className="text-gray-400 text-sm font-medium">{chapters.length} Bölüm Yüklü</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
-          {chapters.map((ch) => (
-            <Link key={ch.number} href={`/manga/${slug}/${ch.number}`}>
-              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-light/50 hover:bg-surface-light border border-white/5 hover:border-primary/30 transition-all group">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-surface flex items-center justify-center font-bold text-gray-400 group-hover:text-primary group-hover:bg-primary/10 transition-colors">
-                    {ch.number}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-200 group-hover:text-white transition-colors">
-                      Bölüm {ch.number}
-                    </h3>
-                    <p className="text-xs text-gray-500">{ch.pageCount} sayfa</p>
-                  </div>
-                </div>
-                <div className="text-right flex flex-col items-end gap-1">
-                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> Yüklendi
-                  </span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <MangaChapters slug={slug} chapters={chapters} />
       </div>
 
       {/* Manga Yorumları */}

@@ -24,12 +24,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
         bio: users.bio,
         badge: users.badge,
         role: users.role,
+        isPrivate: users.isPrivate,
         createdAt: users.createdAt,
       })
       .from(users)
       .where(eq(users.username, decoded));
 
     if (!user) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
+
+    // Gizli profil: sadece kendisi ve admin görebilir
+    const isSelf = session?.userId === user.id;
+    let isAdmin = false;
+    if (session && !isSelf) {
+      const [me] = await db.select().from(users).where(eq(users.id, session.userId));
+      isAdmin = me?.role === "admin";
+    }
+    if (user.isPrivate && !isSelf && !isAdmin) {
+      return NextResponse.json({ private: true, username: user.username });
+    }
 
     const [{ count: commentCount }]: any = await db
       .select({ count: sql<number>`COUNT(*)` })
@@ -60,7 +72,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
         .where(and(eq(follows.followerId, session.userId), eq(follows.followingId, user.id)));
       isFollowing = existing.length > 0;
     }
-
     const xp = await getUserXp(db, user.id);
     const level = levelForXp(xp);
 

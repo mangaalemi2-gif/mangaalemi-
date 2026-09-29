@@ -32,6 +32,7 @@ export default function PublicProfilePage() {
   const [data, setData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -48,7 +49,12 @@ export default function PublicProfilePage() {
           setNotFound(true);
           return;
         }
-        const json = (await res.json()) as ProfileData;
+        const json = (await res.json()) as any;
+        if (json.private) {
+          setIsPrivate(true);
+          setLoading(false);
+          return;
+        }
         setData(json);
         setFollowing(json.follow?.isFollowing ?? false);
         try {
@@ -92,6 +98,16 @@ export default function PublicProfilePage() {
 
   if (loading) {
     return <div className="min-h-[60vh] flex items-center justify-center text-gray-400 animate-pulse">Yükleniyor...</div>;
+  }
+  if (isPrivate) {
+    return (
+      <div className="max-w-xl mx-auto text-center py-20">
+        <User className="w-14 h-14 text-gray-700 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold text-white mb-2">@{username}</h1>
+        <p className="text-gray-400 text-sm">Bu profil gizli. 🔒</p>
+        <Link href="/sohbet" className="text-primary hover:underline text-sm">Sohbete dön</Link>
+      </div>
+    );
   }
   if (notFound || !data) {
     return (

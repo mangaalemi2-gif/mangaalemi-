@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Settings2, Sun, UnfoldVertical, Keyboard, BookOpen } from "lucide-react";
+import { Settings2, Sun, UnfoldVertical, Keyboard, BookOpen, MoonStar } from "lucide-react";
 import { getReaderMode, setReaderMode, type ReaderMode } from "./PageNavigator";
 
 type Width = "narrow" | "wide" | "full";
@@ -18,6 +18,9 @@ export default function ReaderSettings({
   const [brightness, setBrightness] = useState(100);
   const [width, setWidth] = useState<Width>("narrow");
   const [mode, setModeState] = useState<ReaderMode>("scroll");
+  const [wakeLock, setWakeLock] = useState(false);
+  const [wakeSupported, setWakeSupported] = useState(false);
+  const wakeRef = useRef<any>(null);
   const router = useRouter();
 
   // Kayıtlı ayarları yükle + uygula
@@ -29,6 +32,54 @@ export default function ReaderSettings({
       if (["narrow", "wide", "full"].includes(w)) setWidth(w);
       setModeState(getReaderMode());
     } catch { /* yoksay */ }
+    setWakeSupported("wakeLock" in navigator);
+    return () => {
+      // Sayfadan çıkınca kilidi bırak
+      try {
+        wakeRef.current?.release?.();
+      } catch { /* yoksay */ }
+    };
+  }, []);
+
+  // Uyku modu: ekranı uyanık tut (mobil için)
+  async function toggleWake() {
+    if (wakeLock) {
+      try {
+        await wakeRef.current?.release?.();
+      } catch { /* yoksay */ }
+      wakeRef.current = null;
+      setWakeLock(false);
+      try {
+        localStorage.removeItem("reader-wake");
+      } catch { /* yoksay */ }
+      return;
+    }
+    try {
+      const lock = await (navigator as any).wakeLock.request("screen");
+      wakeRef.current = lock;
+      setWakeLock(true);
+      try {
+        localStorage.setItem("reader-wake", "1");
+      } catch { /* yoksay */ }
+      lock.addEventListener?.("release", () => setWakeLock(false));
+    } catch {
+      alert("Tarayıcın ekran kilidini desteklemiyor.");
+    }
+  }
+
+  // Sekme geri gelince kilidi tazele
+  useEffect(() => {
+    async function onVisible() {
+      if (document.visibilityState !== "visible") return;
+      try {
+        if (localStorage.getItem("reader-wake") === "1" && "wakeLock" in navigator) {
+          wakeRef.current = await (navigator as any).wakeLock.request("screen");
+          setWakeLock(true);
+        }
+      } catch { /* yoksay */ }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
   useEffect(() => {
@@ -122,6 +173,16 @@ export default function ReaderSettings({
           <p className="text-[11px] text-gray-600 flex items-center gap-1.5">
             <Keyboard className="w-3.5 h-3.5" /> Kaydırmada ← → bölüm, sayfada ↑ ↓ sayfa değiştirir
           </p>
+          {wakeSupported && (
+            <button
+              onClick={toggleWake}
+              className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-colors ${
+                wakeLock ? "bg-primary/15 border-primary/50 text-primary" : "bg-surface border-white/10 text-gray-400"
+              }`}
+            >
+              <MoonStar className="w-4 h-4" /> {wakeLock ? "Ekran açık tutuluyor" : "Uyku modu: ekranı uyanık tut"}
+            </button>
+          )}
         </div>
       )}
     </div>

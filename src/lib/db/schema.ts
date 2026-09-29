@@ -12,6 +12,7 @@ export const users = sqliteTable("users", {
   role: text("role").default("member"),
   badge: text("badge"),
   accent: text("accent"),
+  isPrivate: integer("is_private", { mode: "boolean" }).default(false),
   lastSeen: integer("last_seen", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });

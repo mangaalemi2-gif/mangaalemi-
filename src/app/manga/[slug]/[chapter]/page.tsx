@@ -6,6 +6,7 @@ import ReadingTracker from "./ReadingTracker";
 import ReaderSettings from "@/components/ReaderSettings";
 import ReadingProgress from "@/components/ReadingProgress";
 import PageNavigator from "@/components/PageNavigator";
+import ZoomableImages from "@/components/ZoomableImages";
 import ChapterActions from "@/components/ChapterActions";
 import CommentSection from "@/components/CommentSection";
 
@@ -73,6 +74,7 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
       {/* Okuma geçmişi takip (client component) */}
       <ReadingTracker mangaSlug={slug} chapterNumber={currentChapter} totalPages={images.length} />
       <ReadingProgress />
+      <ZoomableImages />
 
       {/* Üst Kontrol Barı */}
       <div className="sticky top-16 z-40 bg-background/90 backdrop-blur-md border-b border-white/10 py-3 px-4 flex items-center justify-between gap-2 mb-8 rounded-b-2xl shadow-lg">

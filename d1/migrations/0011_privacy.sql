@@ -1,0 +1,3 @@
+-- Profil gizliliği
+
+ALTER TABLE users ADD COLUMN is_private INTEGER DEFAULT 0;

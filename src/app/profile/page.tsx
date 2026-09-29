@@ -77,6 +77,7 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
+  const [isPrivate, setIsPrivate] = useState(false);
   const [accentHex, setAccentHex] = useState("");
   const [username, setUsername] = useState("");
   const [curPass, setCurPass] = useState("");
@@ -120,6 +121,7 @@ export default function ProfilePage() {
             setBio(p.user.bio || "");
             setAvatarUrl(p.user.avatarUrl || "");
             setCoverUrl(p.user.coverUrl || "");
+            setIsPrivate(!!p.user.isPrivate);
             setAccentHex(p.user.accent || "");
             setUsername(p.user.username || "");
           }
@@ -195,7 +197,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio, avatarUrl, coverUrl, accent: accentHex, username }),
+        body: JSON.stringify({ bio, avatarUrl, coverUrl, accent: accentHex, isPrivate, username }),
       });
       const data = (await res.json()) as any;
       if (!res.ok) {
@@ -506,6 +508,13 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex gap-2 flex-wrap justify-center">
+            <a
+              href="/api/export"
+              download="mangaalemi-verilerim.json"
+              className="px-5 py-2.5 rounded-xl bg-surface-light border border-white/10 text-gray-300 text-sm font-medium hover:text-white transition-all flex items-center gap-2"
+            >
+              Verilerimi İndir
+            </a>
             {user.role === "admin" && (
               <Link
                 href="/admin"
@@ -827,6 +836,18 @@ export default function ProfilePage() {
               <label className="text-xs text-gray-400">Kullanıcı adı</label>
               <input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={30} className="mt-1 w-full bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50" />
             </div>
+            <label className="flex items-center justify-between gap-3 bg-surface-light/40 border border-white/5 rounded-xl px-4 py-3 cursor-pointer">
+              <span>
+                <span className="block text-sm font-medium text-white">Gizli profil 🔒</span>
+                <span className="block text-[11px] text-gray-500">Açıkken profilini senden başkası göremez.</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="w-5 h-5 accent-green-500"
+              />
+            </label>
             <div>
               <label className="text-xs text-gray-400">Vurgu rengi (sitedeki mor renk senin seçtiğin olur)</label>
               <div className="mt-2 flex gap-2 flex-wrap">
