@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp, Heart, Trophy, Flame, Target } from "lucide-react";
 import { ACCENTS, applyAccent } from "@/components/ThemeToggle";
+import { getManga } from "@/data/mangas";
 import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
@@ -372,13 +373,7 @@ export default function ProfilePage() {
   }
 
   function getMangaTitle(slug: string): string {
-    const titles: Record<string, string> = {
-      "dragon-ball-1984": "Dragon Ball",
-      "chainsaw-man": "Chainsaw Man",
-      "demon-slayer": "Demon Slayer",
-      naruto: "Naruto",
-    };
-    return titles[slug] || slug;
+    return getManga(slug)?.title || slug;
   }
 
   function chapterPages(slug: string, ch: number): number {
