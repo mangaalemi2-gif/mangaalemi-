@@ -70,6 +70,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("Register error:", error);
-    return NextResponse.json({ error: "Kayıt sırasında bir hata oluştu." }, { status: 500 });
+    return NextResponse.json({ error: "Kayıt sırasında bir hata oluştu: " + error?.message }, { status: 500 });
   }
 }

@@ -66,6 +66,6 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error: any) {
     console.error("Login error:", error);
-    return NextResponse.json({ error: "Giriş sırasında bir hata oluştu." }, { status: 500 });
+    return NextResponse.json({ error: "Giriş sırasında bir hata oluştu: " + error?.message }, { status: 500 });
   }
 }
