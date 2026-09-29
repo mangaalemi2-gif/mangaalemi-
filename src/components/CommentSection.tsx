@@ -102,6 +102,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [sort, setSort] = useState<"new" | "top">("new");
   const [sending, setSending] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ type: "comment" | "user"; id: string; label?: string } | null>(null);
 
@@ -341,6 +342,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
 
   const { icon, label } = titles[type];
   const totalCount = comments.reduce((s, c) => s + 1 + (c.replies?.length || 0), 0);
+  const visible = sort === "top" ? [...comments].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0)) : comments;
 
   function renderComment(c: CommentItem | ReplyItem, isReply = false, parentId?: string) {
     const isLiked = liked.includes(c.id);
@@ -597,6 +599,21 @@ export default function CommentSection({ type, slug, chapter }: Props) {
 
           <div className="border-t border-white/5" />
 
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-gray-600">Sırala:</span>
+            {(["new", "top"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setSort(s)}
+                className={`px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${
+                  sort === s ? "bg-primary/15 border-primary/40 text-primary" : "border-white/10 text-gray-500 hover:text-gray-300"
+                }`}
+              >
+                {s === "new" ? "En Yeniler" : "En Beğenilenler"}
+              </button>
+            ))}
+          </div>
+
           <div className="space-y-5">
             {loading ? (
               <div className="space-y-4 animate-pulse">
@@ -616,7 +633,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                 <p className="text-gray-400 text-sm">Henüz yorum yok. İlk yazan sen ol!</p>
               </div>
             ) : (
-              comments.map((c) => (
+              visible.map((c) => (
                 <div key={c.id}>
                   {renderComment(c)}
                   {(c.replies || []).map((r) => renderComment(r, true, c.id))}

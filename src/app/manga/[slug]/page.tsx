@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { BookOpen, Star, Clock } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
@@ -25,6 +26,21 @@ function getChapters(slug: string) {
   }
 
   return chapters.sort((a, b) => a.number - b.number);
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const meta = getManga(slug);
+  if (!meta) return { title: "Manga bulunamadı - MangaAlemi" };
+  return {
+    title: `${meta.title} Oku - MangaAlemi`,
+    description: meta.description.slice(0, 160),
+    openGraph: {
+      title: `${meta.title} - MangaAlemi`,
+      description: meta.description.slice(0, 160),
+      images: [mangaCover(meta)],
+    },
+  };
 }
 
 export default async function MangaDetailPage({ params }: { params: Promise<{ slug: string }> }) {

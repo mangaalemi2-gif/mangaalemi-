@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
@@ -28,6 +29,16 @@ function getTotalChapters(slug: string): number {
     }
   }
   return max;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; chapter: string }> }): Promise<Metadata> {
+  const { slug, chapter } = await params;
+  const { getManga } = await import("@/data/mangas");
+  const meta = getManga(slug);
+  return {
+    title: meta ? `${meta.title} Bölüm ${chapter} Oku - MangaAlemi` : `Bölüm ${chapter} - MangaAlemi`,
+    description: meta ? `${meta.title} ${chapter}. bölümü Türkçe oku.` : undefined,
+  };
 }
 
 export default async function ReaderPage({ params }: { params: Promise<{ slug: string; chapter: string }> }) {

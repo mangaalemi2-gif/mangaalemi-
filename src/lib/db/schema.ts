@@ -195,6 +195,14 @@ export const bans = sqliteTable("bans", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
+// Öne çıkan manga (anasayfa vitrini)
+export const featured = sqliteTable("featured", {
+  id: text("id").primaryKey(),
+  mangaSlug: text("manga_slug").notNull(),
+  createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
 // Manga listesi (Okuyorum / Tamamladım / Bekletiyorum / Bıraktım / Planlıyorum)
 export const mangaList = sqliteTable("manga_list", {
   id: text("id").primaryKey(),

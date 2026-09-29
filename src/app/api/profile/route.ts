@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { users, comments, commentLikes, polls, pollVotes, supportTickets, reports } from "@/lib/db/schema";
+import { users, comments, commentLikes, polls, pollVotes, supportTickets, reports, sessions } from "@/lib/db/schema";
 import { getSession, verifyPassword, hashPassword } from "@/lib/auth";
 import { getUserXp, levelForXp } from "@/lib/levels";
 import { eq, sql } from "drizzle-orm";
@@ -118,6 +118,35 @@ export async function PATCH(req: NextRequest) {
 
     await db.update(users).set(update).where(eq(users.id, session.userId));
     return NextResponse.json({ ok: true });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+// DELETE: Hesabı tamamen sil (şifre onayı gerekli)
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession(req);
+    if (!session) return NextResponse.json({ error: "Giriş yapmalısın." }, { status: 401 });
+    const db = getDb();
+
+    const { password, confirm } = (await req.json()) as any;
+    if (confirm !== "HESABIMI SİL") return NextResponse.json({ error: "Onay metnini doğru yazmalısın." }, { status: 400 });
+
+    const [me] = await db.select().from(users).where(eq(users.id, session.userId));
+    if (!me) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
+    if (me.role === "admin") return NextResponse.json({ error: "Admin hesabı buradan silinemez." }, { status: 403 });
+    if (!me.passwordHash || !password) return NextResponse.json({ error: "Şifreni girmelisin." }, { status: 400 });
+    const ok = await verifyPassword(password, me.passwordHash);
+    if (!ok) return NextResponse.json({ error: "Şifre yanlış." }, { status: 400 });
+
+    // Kullanıcıyı sil — ilişkili veriler şemadaki cascade/set-null kurallarıyla temizlenir
+    await db.delete(sessions).where(eq(sessions.userId, session.userId));
+    await db.delete(users).where(eq(users.id, session.userId));
+
+    const res = NextResponse.json({ ok: true });
+    res.cookies.delete("session");
+    return res;
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

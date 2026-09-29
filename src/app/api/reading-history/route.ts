@@ -96,3 +96,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ history: [] });
   }
 }
+
+// DELETE: Okuma geçmişini temizle
+export async function DELETE(request: NextRequest) {
+  try {
+    const sessionId = request.cookies.get("session")?.value;
+    if (!sessionId) return NextResponse.json({ error: "Giriş yapmalısın." }, { status: 401 });
+
+    const env = (request as any).cf?.env || (globalThis as any).process?.env;
+    const db = getDb(env);
+
+    const session = await db.select().from(sessions).where(eq(sessions.id, sessionId)).get();
+    if (!session) return NextResponse.json({ error: "Geçersiz oturum." }, { status: 401 });
+
+    await db.delete(readingHistory).where(eq(readingHistory.userId, session.userId));
+    return NextResponse.json({ ok: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: "Hata oluştu." }, { status: 500 });
+  }
+}

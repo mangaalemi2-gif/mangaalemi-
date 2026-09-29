@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
+import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "MangaAlemi - Ücretsiz Manga ve Webtoon Oku",
   description: "Modern, hızlı ve kesintisiz manga okuma platformu. Favori serilerini takip et!",
 };

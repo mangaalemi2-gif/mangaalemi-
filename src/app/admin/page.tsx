@@ -244,6 +244,16 @@ export default function AdminPage() {
     setPolls((prev) => prev.filter((p) => p.id !== id));
   }
 
+  async function setFeatured(slug: string) {
+    const res = await fetch("/api/admin/featured", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mangaSlug: slug }),
+    });
+    if (res.ok) alert(`${slug} vitrine çıkarıldı!`);
+    else alert("Ayarlanamadı.");
+  }
+
   async function updateRequest(id: string, status: string, adminNote?: string) {
     const note = adminNote !== undefined ? adminNote : prompt("Admin notu (opsiyonel):") || "";
     await fetch("/api/series-requests", {
@@ -424,6 +434,13 @@ export default function AdminPage() {
                   <span className="px-3 py-1 bg-primary/20 text-primary text-xs font-bold rounded-full border border-primary/30">
                     Aktif
                   </span>
+                  <button
+                    onClick={() => setFeatured(slug)}
+                    className="px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-bold hover:bg-yellow-500/20 transition-colors"
+                    title="Anasayfa vitrinine çıkar"
+                  >
+                    ★ Öne Çıkar
+                  </button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {chapters.map((ch) => (

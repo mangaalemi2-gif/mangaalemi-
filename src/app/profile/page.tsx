@@ -78,6 +78,8 @@ export default function ProfilePage() {
   const [curPass, setCurPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [delPass, setDelPass] = useState("");
+  const [delConfirm, setDelConfirm] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -257,6 +259,39 @@ export default function ProfilePage() {
       setUploadingAvatar(false);
       e.target.value = "";
     }
+  }
+
+  async function handleClearHistory() {
+    if (!confirm("Okuma geçmişin tamamen silinsin mi?")) return;
+    const res = await fetch("/api/reading-history", { method: "DELETE" });
+    if (res.ok) {
+      setHistory([]);
+      setSaveMsg("✓ Okuma geçmişi temizlendi.");
+      setTimeout(() => setSaveMsg(""), 3000);
+    }
+  }
+
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setSaveMsg("");
+    setSaveErr("");
+    if (!delPass || !delConfirm) {
+      setSaveErr("Şifreni gir ve onay metnini yaz.");
+      return;
+    }
+    if (!confirm("SON UYARI: Hesabın, yorumların, puanların — her şey silinecek. Emin misin?")) return;
+    const res = await fetch("/api/profile", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: delPass, confirm: delConfirm }),
+    });
+    const data = (await res.json()) as any;
+    if (!res.ok) {
+      setSaveErr(data.error || "Silinemedi.");
+      return;
+    }
+    router.push("/");
+    router.refresh();
   }
 
   async function saveGoal(kind: string) {
@@ -757,6 +792,32 @@ export default function ProfilePage() {
 
           {saveErr && <p className="text-red-400 text-sm">{saveErr}</p>}
           {saveMsg && <p className="text-primary text-sm font-medium">{saveMsg}</p>}
+
+          <div className="glass-panel rounded-3xl p-6 border border-red-500/25 space-y-4">
+            <h2 className="font-bold text-red-400">Tehlikeli Bölge</h2>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-sm text-white font-medium">Okuma geçmişini temizle</p>
+                <p className="text-xs text-gray-500">Kaldığın yer kayıtları silinir.</p>
+              </div>
+              <button onClick={handleClearHistory} className="px-4 py-2 rounded-xl bg-surface-light border border-white/10 text-sm text-gray-300 hover:text-red-400 hover:border-red-500/40 transition-colors">
+                Temizle
+              </button>
+            </div>
+            <form onSubmit={handleDeleteAccount} className="space-y-3 border-t border-red-500/15 pt-4">
+              <div>
+                <p className="text-sm text-white font-medium">Hesabı tamamen sil</p>
+                <p className="text-xs text-gray-500">Yorumların, puanların, mesajların ve profilin kalıcı olarak silinir. Admin hesapları buradan silinemez.</p>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <input type="password" value={delPass} onChange={(e) => setDelPass(e.target.value)} placeholder="Şifren" className="bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-red-500/50" />
+                <input value={delConfirm} onChange={(e) => setDelConfirm(e.target.value)} placeholder='Onay için "HESABIMI SİL" yaz' className="bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-red-500/50" />
+              </div>
+              <button type="submit" className="px-5 py-2.5 rounded-xl bg-red-500/15 border border-red-500/40 text-red-300 text-sm font-bold hover:bg-red-500/25 transition-colors">
+                Hesabımı Kalıcı Olarak Sil
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>
