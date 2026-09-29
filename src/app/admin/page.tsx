@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye, MessageSquare, LifeBuoy, Flag, Trash2, Megaphone, Send, Ban, Pin, PinOff, BellPlus } from "lucide-react";
+import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye, MessageSquare, LifeBuoy, Flag, Trash2, Megaphone, Send, Ban, Pin, PinOff, BellPlus, BookPlus } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
@@ -12,7 +12,7 @@ interface UserData {
   role: string;
 }
 
-type Tab = "overview" | "mangas" | "users" | "comments" | "tickets" | "reports" | "polls" | "announcements";
+type Tab = "overview" | "mangas" | "users" | "comments" | "tickets" | "reports" | "polls" | "announcements" | "requests";
 
 export default function AdminPage() {
   const [user, setUser] = useState<UserData | null>(null);
@@ -32,6 +32,7 @@ export default function AdminPage() {
   const [ncChapter, setNcChapter] = useState("");
   const [ncSending, setNcSending] = useState(false);
   const [ncResult, setNcResult] = useState("");
+  const [requests, setRequests] = useState<any[]>([]);
   const [tabLoading, setTabLoading] = useState(false);
   const router = useRouter();
 
@@ -106,6 +107,12 @@ export default function AdminPage() {
           const d = (await res.json()) as any;
           setAnnouncements(d.announcements || []);
         }
+      } else if (tab === "requests") {
+        const res = await fetch("/api/series-requests?all=1");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setRequests(d.requests || []);
+        }
       }
     } finally {
       setTabLoading(false);
@@ -113,7 +120,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    if (user && ["users", "comments", "tickets", "reports", "polls", "announcements"].includes(activeTab)) {
+    if (user && ["users", "comments", "tickets", "reports", "polls", "announcements", "requests"].includes(activeTab)) {
       loadTab(activeTab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -229,6 +236,16 @@ export default function AdminPage() {
     setPolls((prev) => prev.filter((p) => p.id !== id));
   }
 
+  async function updateRequest(id: string, status: string, adminNote?: string) {
+    const note = adminNote !== undefined ? adminNote : prompt("Admin notu (opsiyonel):") || "";
+    await fetch("/api/series-requests", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status, adminNote: note }),
+    });
+    setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status, adminNote: note || r.adminNote } : r)));
+  }
+
   async function sendAnnouncement(e: React.FormEvent) {
     e.preventDefault();
     if (!annTitle.trim() || !annMsg.trim() || annSending) return;
@@ -258,6 +275,7 @@ export default function AdminPage() {
     { key: "reports", label: `Bildirimler (${reports.length || ""})`, icon: Flag },
     { key: "polls", label: "Anketler", icon: BarChart3 },
     { key: "announcements", label: "Duyurular", icon: Megaphone },
+    { key: "requests", label: `Seri Talepleri (${requests.length || ""})`, icon: BookPlus },
   ];
 
   return (
@@ -577,6 +595,31 @@ export default function AdminPage() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {activeTab === "requests" && (
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="font-bold text-white mb-4">Seri Talepleri ({requests.length})</h3>
+          {tabLoading ? <p className="text-gray-500 text-sm animate-pulse">Yükleniyor...</p> : requests.length === 0 ? <p className="text-gray-500 text-sm">Talep yok.</p> : (
+            <div className="space-y-3">
+              {requests.map((r: any) => (
+                <div key={r.id} className="p-4 rounded-xl bg-surface-light/40 border border-white/5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                    <p className="font-semibold text-white text-sm">{r.title} {r.author && <span className="text-gray-500 font-normal">— {r.author}</span>} <span className="text-xs text-gray-500">(@{r.username || "?"})</span></p>
+                    <select value={r.status} onChange={(e) => updateRequest(r.id, e.target.value)} className="bg-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
+                      <option value="pending">pending</option>
+                      <option value="approved">approved</option>
+                      <option value="rejected">rejected</option>
+                    </select>
+                  </div>
+                  {r.description && <p className="text-sm text-gray-400">{r.description}</p>}
+                  {r.link && <a href={r.link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">{r.link}</a>}
+                  {r.adminNote && <p className="text-xs text-accent mt-1">Not: {r.adminNote}</p>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

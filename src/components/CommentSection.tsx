@@ -7,6 +7,20 @@ import ReportModal from "./ReportModal";
 
 const EMOJIS = ["🔥", "😂", "😮", "❤️", "😢", "👏"];
 
+// @kullanıcı ifadelerini profile linkine çevirir
+function renderContent(text: string) {
+  const parts = text.split(/(@[a-zA-Z0-9_çÇğĞıİöÖşŞüÜ]{3,30})/g);
+  return parts.map((p, i) =>
+    /^@[a-zA-Z0-9_çÇğĞıİöÖşŞüÜ]{3,30}$/.test(p) ? (
+      <Link key={i} href={`/kullanici/${encodeURIComponent(p.slice(1))}`} className="text-primary font-semibold hover:underline">
+        {p}
+      </Link>
+    ) : (
+      <span key={i}>{p}</span>
+    )
+  );
+}
+
 interface ReplyItem {
   id: string;
   content: string;
@@ -374,7 +388,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                   <Eye className="w-3 h-3" /> Gizle
                 </button>
               )}
-              <p className="text-gray-300 text-sm leading-relaxed break-words">{c.content}</p>
+              <p className="text-gray-300 text-sm leading-relaxed break-words">{renderContent(c.content)}</p>
             </>
           )}
           <div className="mt-2 flex items-center gap-3">

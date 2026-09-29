@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy, Compass, Trophy } from "lucide-react";
+import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy, Compass, Trophy, Mail, BookPlus } from "lucide-react";
 import { useState, useEffect } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
 
@@ -15,8 +15,41 @@ const NAV_LINKS = [
   { href: "/sohbet", label: "Sohbet", icon: MessagesSquare },
   { href: "/anketler", label: "Anketler", icon: BarChart3 },
   { href: "/liderlik", label: "Liderlik", icon: Trophy },
+  { href: "/seri-oner", label: "Seri Öner", icon: BookPlus },
   { href: "/destek", label: "Destek", icon: LifeBuoy },
 ];
+
+function MessagesIcon() {
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    async function load() {
+      try {
+        const res = await fetch("/api/messages?unread=1");
+        if (res.ok && alive) {
+          const data = (await res.json()) as any;
+          setUnread(data.unread || 0);
+        }
+      } catch { /* yoksay */ }
+    }
+    load();
+    const t = setInterval(load, 30000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+  return (
+    <Link href="/mesajlar" className="relative p-2 rounded-full text-gray-300 hover:text-white hover:bg-surface-light transition-all" title="Mesajlar">
+      <Mail className="w-5 h-5" />
+      {unread > 0 && (
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center">
+          {unread > 9 ? "9+" : unread}
+        </span>
+      )}
+    </Link>
+  );
+}
 
 export default function Navbar() {
   const [user, setUser] = useState<UserData | null>(null);
@@ -84,6 +117,7 @@ export default function Navbar() {
 
           {/* Desktop User Menu */}
           <div className="hidden md:flex items-center gap-3">
+            {user && <MessagesIcon />}
             {user && <NotificationsBell />}
             {user ? (
               <>
@@ -121,6 +155,7 @@ export default function Navbar() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-1">
+            {user && <MessagesIcon />}
             {user && <NotificationsBell />}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}

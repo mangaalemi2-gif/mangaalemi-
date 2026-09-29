@@ -194,3 +194,52 @@ export const bans = sqliteTable("bans", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
+// Özel mesajlaşma
+export const conversations = sqliteTable("conversations", {
+  id: text("id").primaryKey(),
+  userA: text("user_a").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userB: text("user_b").notNull().references(() => users.id, { onDelete: "cascade" }),
+  lastMessageAt: integer("last_message_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+export const messages = sqliteTable("messages", {
+  id: text("id").primaryKey(),
+  conversationId: text("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+  senderId: text("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  isRead: integer("is_read", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Seri ekleme talepleri
+export const seriesRequests = sqliteTable("series_requests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  author: text("author"),
+  description: text("description"),
+  link: text("link"),
+  status: text("status").default("pending"), // pending, approved, rejected
+  adminNote: text("admin_note"),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Okuma hedefleri (kind: daily_pages, weekly_chapters, daily_messages)
+export const readingGoals = sqliteTable("reading_goals", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  kind: text("kind").notNull(),
+  target: integer("target").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Günlük aktivite (streak + hedef hesabı)
+export const dailyActivity = sqliteTable("daily_activity", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  day: text("day").notNull(), // YYYY-MM-DD
+  pages: integer("pages").default(0),
+  chapters: integer("chapters").default(0),
+  messages: integer("messages").default(0),
+});
+

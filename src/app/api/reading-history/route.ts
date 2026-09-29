@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { sessions, readingHistory } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateId } from "@/lib/auth";
+import { bumpActivity } from "@/lib/streaks";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
       .get();
 
     if (existing) {
+      const isNewChapter = existing.chapterNumber !== chapterNumber;
       await db
         .update(readingHistory)
         .set({
@@ -40,6 +42,12 @@ export async function POST(request: NextRequest) {
           updatedAt: new Date(),
         })
         .where(eq(readingHistory.id, existing.id));
+      // Yeni bölüm açıldıysa aktiviteye işle (streak/hedef için)
+      if (isNewChapter) {
+        try {
+          await bumpActivity(db, session.userId, { chapters: 1, pages: pageNumber || 1 });
+        } catch { /* yoksay */ }
+      }
     } else {
       await db.insert(readingHistory).values({
         id: generateId(),
@@ -48,6 +56,9 @@ export async function POST(request: NextRequest) {
         chapterNumber,
         pageNumber: pageNumber || 1,
       });
+      try {
+        await bumpActivity(db, session.userId, { chapters: 1, pages: pageNumber || 1 });
+      } catch { /* yoksay */ }
     }
 
     return NextResponse.json({ success: true });

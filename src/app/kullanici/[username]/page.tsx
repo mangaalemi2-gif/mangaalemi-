@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { User, Flag, MessageSquare, ThumbsUp, Calendar } from "lucide-react";
+import { User, Flag, MessageSquare, ThumbsUp, Calendar, Mail } from "lucide-react";
 import ReportModal from "@/components/ReportModal";
 
 interface ProfileData {
@@ -126,15 +126,23 @@ export default function PublicProfilePage() {
           </div>
           <div className="flex flex-col gap-2">
             {!data.isSelf && (
-              <button
-                onClick={toggleFollow}
-                disabled={followLoading}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 disabled:opacity-50 ${
-                  following ? "bg-surface-light border border-white/10 text-gray-300" : "bg-primary text-black"
-                }`}
-              >
-                {following ? "Takipten Çık" : "Takip Et"}
-              </button>
+              <>
+                <button
+                  onClick={toggleFollow}
+                  disabled={followLoading}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 disabled:opacity-50 ${
+                    following ? "bg-surface-light border border-white/10 text-gray-300" : "bg-primary text-black"
+                  }`}
+                >
+                  {following ? "Takipten Çık" : "Takip Et"}
+                </button>
+                <Link
+                  href={`/mesajlar?to=${encodeURIComponent(user.id)}&name=${encodeURIComponent(user.username)}`}
+                  className="px-4 py-2 rounded-xl bg-surface-light border border-white/10 text-gray-200 text-xs font-bold hover:border-primary/40 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5" /> Mesaj Gönder
+                </Link>
+              </>
             )}
             <button
               onClick={() => setShowReport(true)}

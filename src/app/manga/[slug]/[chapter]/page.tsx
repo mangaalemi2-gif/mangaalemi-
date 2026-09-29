@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 import ReadingTracker from "./ReadingTracker";
+import ReaderSettings from "@/components/ReaderSettings";
 import CommentSection from "@/components/CommentSection";
 
 // Manifest'ten bölüm görselleri al
@@ -54,24 +55,27 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
   }
 
   return (
-    <div className="max-w-3xl mx-auto w-full -mt-8">
+    <div className="max-w-5xl mx-auto w-full -mt-8">
       {/* Okuma geçmişi takip (client component) */}
       <ReadingTracker mangaSlug={slug} chapterNumber={currentChapter} totalPages={images.length} />
 
       {/* Üst Kontrol Barı */}
-      <div className="sticky top-16 z-40 bg-background/90 backdrop-blur-md border-b border-white/10 py-3 px-4 flex items-center justify-between mb-8 rounded-b-2xl shadow-lg">
+      <div className="sticky top-16 z-40 bg-background/90 backdrop-blur-md border-b border-white/10 py-3 px-4 flex items-center justify-between gap-2 mb-8 rounded-b-2xl shadow-lg">
         <Link
           href={`/manga/${slug}`}
-          className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors flex-shrink-0"
         >
           <ChevronLeft className="w-5 h-5" /> Detaylar
         </Link>
         <span className="font-bold text-white text-center flex-1">Bölüm {chapter}</span>
-        <div className="w-16"></div>
+        <ReaderSettings
+          prevHref={prevChapter ? `/manga/${slug}/${prevChapter}` : null}
+          nextHref={nextChapter ? `/manga/${slug}/${nextChapter}` : null}
+        />
       </div>
 
       {/* Okuyucu Alanı (Webtoon stili - Dikey Kaydırma) */}
-      <div className="flex flex-col items-center w-full shadow-2xl bg-black rounded-lg overflow-hidden">
+      <div id="reader-images" className="flex flex-col items-center w-full shadow-2xl bg-black rounded-lg overflow-hidden mx-auto max-w-3xl">
         {images.map((src: string, index: number) => (
           <img
             key={index}

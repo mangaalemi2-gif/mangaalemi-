@@ -23,6 +23,7 @@ export default function AnketlerPage() {
   const [showForm, setShowForm] = useState(false);
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", ""]);
+  const [duration, setDuration] = useState("0");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
   const [votingId, setVotingId] = useState<string | null>(null);
@@ -89,10 +90,11 @@ export default function AnketlerPage() {
     }
     setCreating(true);
     try {
+      const endsAt = duration !== "0" ? new Date(Date.now() + parseInt(duration) * 86400000).toISOString() : null;
       const res = await fetch("/api/polls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: question.trim(), options: clean }),
+        body: JSON.stringify({ question: question.trim(), options: clean, endsAt }),
       });
       const data = (await res.json()) as any;
       if (!res.ok) {
@@ -166,10 +168,22 @@ export default function AnketlerPage() {
                 </div>
               ))}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {options.length < 6 && (
                 <button type="button" onClick={() => setOptions((prev) => [...prev, ""])} className="text-xs text-accent hover:underline">+ Seçenek ekle</button>
               )}
+              <select
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className="bg-surface-light border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white"
+                title="Anket süresi"
+              >
+                <option value="0">Süresiz</option>
+                <option value="1">1 gün</option>
+                <option value="3">3 gün</option>
+                <option value="7">7 gün</option>
+                <option value="30">30 gün</option>
+              </select>
               <div className="flex-1" />
               <button type="submit" disabled={creating} className="px-5 py-2 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform disabled:opacity-50">
                 {creating ? "Oluşturuluyor..." : "Yayınla"}
@@ -191,6 +205,9 @@ export default function AnketlerPage() {
         <div className="space-y-4">
           {polls.map((p) => {
             const total = p.voteCounts.reduce((a, b) => a + b, 0);
+            const endsMs = p.endsAt ? (typeof p.endsAt === "number" ? p.endsAt * 1000 : new Date(p.endsAt).getTime()) : null;
+            const ended = endsMs !== null && endsMs < Date.now();
+            const remaining = endsMs && !ended ? Math.max(1, Math.ceil((endsMs - Date.now()) / 86400000)) : null;
             return (
               <div key={p.id} className="glass-panel rounded-2xl p-6 border border-white/10">
                 <div className="flex items-start justify-between gap-3 mb-4">
@@ -198,6 +215,7 @@ export default function AnketlerPage() {
                     <h3 className="font-bold text-white">{p.question}</h3>
                     <p className="text-xs text-gray-500 mt-1">
                       {p.username ? `@${p.username}` : "Anonim"} • {total} oy
+                      {ended ? <span className="text-red-400 font-bold"> • Sona erdi</span> : remaining ? <span> • {remaining} gün kaldı</span> : null}
                     </p>
                   </div>
                   <button onClick={() => handleDelete(p.id)} className="text-gray-700 hover:text-red-400 transition-colors" title="Sil (sahibi/admin)">
@@ -212,7 +230,7 @@ export default function AnketlerPage() {
                     return (
                       <button
                         key={i}
-                        disabled={votingId === p.id}
+                        disabled={votingId === p.id || ended}
                         onClick={() => handleVote(p.id, i)}
                         className={`w-full text-left relative overflow-hidden rounded-xl border px-4 py-2.5 text-sm transition-all ${
                           selected ? "border-primary/60 bg-primary/10 text-white" : "border-white/10 bg-surface-light/40 text-gray-200 hover:border-primary/40"

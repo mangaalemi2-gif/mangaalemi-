@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp, Heart, Trophy } from "lucide-react";
+import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp, Heart, Trophy, Flame, Target } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
@@ -61,6 +61,8 @@ export default function ProfilePage() {
   const [myTickets, setMyTickets] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [seriesFollows, setSeriesFollows] = useState<any[]>([]);
+  const [streaks, setStreaks] = useState<{ reading: { current: number; longest: number }; chat: { current: number; longest: number }; goals: any[] } | null>(null);
+  const [goalInputs, setGoalInputs] = useState<Record<string, string>>({});
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState<LevelInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes] = await Promise.all([
+        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/reading-history"),
@@ -87,6 +89,7 @@ export default function ProfilePage() {
           fetch("/api/support"),
           fetch("/api/favorites"),
           fetch("/api/series-follow"),
+          fetch("/api/streaks"),
         ]);
 
         if (!meRes.ok) {
@@ -134,6 +137,10 @@ export default function ProfilePage() {
         if (sfRes.ok) {
           const s = (await sfRes.json()) as any;
           setSeriesFollows(s.follows || []);
+        }
+        if (stRes.ok) {
+          const s = (await stRes.json()) as any;
+          setStreaks(s);
         }
       } catch {
         router.push("/login");
@@ -219,6 +226,20 @@ export default function ProfilePage() {
     if (!confirm("Yorum silinsin mi?")) return;
     const res = await fetch(`/api/comments?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (res.ok) setMyComments((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  async function saveGoal(kind: string) {
+    const target = goalInputs[kind] ?? "";
+    const res = await fetch("/api/goals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind, target: parseInt(target) || 0 }),
+    });
+    if (res.ok) {
+      const data = (await res.json()) as any;
+      setStreaks((prev) => (prev ? { ...prev, goals: data.goals } : prev));
+      setGoalInputs((prev) => ({ ...prev, [kind]: "" }));
+    }
   }
 
   function getMangaTitle(slug: string): string {
@@ -498,7 +519,75 @@ export default function ProfilePage() {
       )}
 
       {tab === "stats" && (
-        <div className="glass-panel rounded-3xl p-6 border border-white/10 space-y-6">
+        <div className="space-y-4">
+          {/* Seriler */}
+          {streaks && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="glass-panel rounded-2xl p-6 border border-orange-500/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <Flame className="w-5 h-5 text-orange-400" />
+                  <h3 className="font-bold text-white">Okuma Serisi</h3>
+                </div>
+                <p className="text-3xl font-extrabold text-orange-400">{streaks.reading.current} gün</p>
+                <p className="text-xs text-gray-500 mt-1">Peş peşe okuduğun gün sayısı • En uzun: {streaks.reading.longest} gün</p>
+                <p className="text-[11px] text-gray-600 mt-2">Her gün en az 1 bölüm aç, seriyi koru.</p>
+              </div>
+              <div className="glass-panel rounded-2xl p-6 border border-primary/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <Flame className="w-5 h-5 text-primary" />
+                  <h3 className="font-bold text-white">Sohbet Serisi</h3>
+                </div>
+                <p className="text-3xl font-extrabold text-primary">{streaks.chat.current} gün</p>
+                <p className="text-xs text-gray-500 mt-1">Peş peşe yazıştığın gün sayısı • En uzun: {streaks.chat.longest} gün</p>
+                <p className="text-[11px] text-gray-600 mt-2">Yorum, yanıt veya özel mesaj sayılır.</p>
+              </div>
+            </div>
+          )}
+
+          {/* Hedefler */}
+          <div className="glass-panel rounded-3xl p-6 border border-white/10 space-y-4">
+            <h3 className="font-bold text-white flex items-center gap-2"><Target className="w-5 h-5 text-accent" /> Hedeflerin</h3>
+            {[
+              { kind: "daily_pages", label: "Günlük sayfa hedefi", hint: "örn: 50" },
+              { kind: "weekly_chapters", label: "Haftalık bölüm hedefi", hint: "örn: 10" },
+              { kind: "daily_messages", label: "Günlük sohbet hedefi", hint: "örn: 5" },
+            ].map((g) => {
+              const cur = streaks?.goals.find((x: any) => x.kind === g.kind);
+              return (
+                <div key={g.kind} className="bg-surface-light/40 border border-white/5 rounded-xl p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                    <span className="text-sm font-semibold text-white">{g.label}</span>
+                    <div className="flex gap-2">
+                      <input
+                        value={goalInputs[g.kind] ?? (cur?.target || "")}
+                        onChange={(e) => setGoalInputs((prev) => ({ ...prev, [g.kind]: e.target.value }))}
+                        type="number"
+                        min={0}
+                        max={10000}
+                        placeholder={g.hint}
+                        className="w-24 bg-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:border-accent/50"
+                      />
+                      <button onClick={() => saveGoal(g.kind)} className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-bold hover:scale-105 transition-transform">
+                        Kaydet
+                      </button>
+                    </div>
+                  </div>
+                  {cur && cur.target > 0 ? (
+                    <>
+                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${cur.pct >= 100 ? "bg-primary" : "bg-gradient-to-r from-accent to-primary"}`} style={{ width: `${cur.pct}%` }} />
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-1">{cur.done} / {cur.target} ({cur.pct}%) {cur.pct >= 100 ? "🎉 Tamamlandı!" : ""}</p>
+                    </>
+                  ) : (
+                    <p className="text-[11px] text-gray-600">Hedef belirlenmedi.</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="glass-panel rounded-3xl p-6 border border-white/10 space-y-6">
           <h2 className="font-bold text-white flex items-center gap-2"><BarChart3 className="w-5 h-5 text-accent" /> Okuma İstatistiklerin</h2>
           {(() => {
             const s = readingStats();
@@ -538,6 +627,7 @@ export default function ProfilePage() {
               </>
             );
           })()}
+          </div>
         </div>
       )}
 

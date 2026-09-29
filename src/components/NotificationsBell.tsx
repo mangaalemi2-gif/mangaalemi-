@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, Reply, UserPlus, Megaphone } from "lucide-react";
+import { Bell, CheckCheck, Reply, UserPlus, Megaphone, AtSign } from "lucide-react";
 
 interface Notif {
   id: string;
@@ -18,6 +18,7 @@ const ICONS: Record<string, any> = {
   reply: Reply,
   follow: UserPlus,
   announcement: Megaphone,
+  mention: AtSign,
 };
 
 export default function NotificationsBell() {
