@@ -203,6 +203,37 @@ export const featured = sqliteTable("featured", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
+// Bölüm beğenileri
+export const chapterLikes = sqliteTable("chapter_likes", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mangaSlug: text("manga_slug").notNull(),
+  chapter: text("chapter").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Bölüm görüntülenme sayaçları
+export const chapterStats = sqliteTable("chapter_stats", {
+  mangaSlug: text("manga_slug").notNull(),
+  chapter: text("chapter").notNull(),
+  views: integer("views").default(0),
+});
+
+// Kullanıcı engelleme
+export const blocks = sqliteTable("blocks", {
+  id: text("id").primaryKey(),
+  blockerId: text("blocker_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  blockedId: text("blocked_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Site ayarları (bakım modu, discord webhook...)
+export const siteSettings = sqliteTable("site_settings", {
+  key: text("key").primaryKey(),
+  value: text("value"),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
 // Manga listesi (Okuyorum / Tamamladım / Bekletiyorum / Bıraktım / Planlıyorum)
 export const mangaList = sqliteTable("manga_list", {
   id: text("id").primaryKey(),

@@ -4,6 +4,8 @@ import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 import ReadingTracker from "./ReadingTracker";
 import ReaderSettings from "@/components/ReaderSettings";
+import ReadingProgress from "@/components/ReadingProgress";
+import ChapterActions from "@/components/ChapterActions";
 import CommentSection from "@/components/CommentSection";
 
 // Manifest'ten bölüm görselleri al
@@ -69,6 +71,7 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
     <div className="max-w-5xl mx-auto w-full -mt-8">
       {/* Okuma geçmişi takip (client component) */}
       <ReadingTracker mangaSlug={slug} chapterNumber={currentChapter} totalPages={images.length} />
+      <ReadingProgress />
 
       {/* Üst Kontrol Barı */}
       <div className="sticky top-16 z-40 bg-background/90 backdrop-blur-md border-b border-white/10 py-3 px-4 flex items-center justify-between gap-2 mb-8 rounded-b-2xl shadow-lg">
@@ -83,6 +86,10 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
           prevHref={prevChapter ? `/manga/${slug}/${prevChapter}` : null}
           nextHref={nextChapter ? `/manga/${slug}/${nextChapter}` : null}
         />
+      </div>
+
+      <div className="flex justify-center mb-6">
+        <ChapterActions mangaSlug={slug} chapter={chapter} />
       </div>
 
       {/* Okuyucu Alanı (Webtoon stili - Dikey Kaydırma) */}

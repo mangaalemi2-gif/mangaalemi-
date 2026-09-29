@@ -99,6 +99,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
   const [myReactions, setMyReactions] = useState<Record<string, string[]>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [blocked, setBlocked] = useState<string[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -112,10 +113,11 @@ export default function CommentSection({ type, slug, chapter }: Props) {
   const fetchComments = useCallback(async () => {
     setLoading(true);
     try {
-      const [cRes, likeRes, meRes] = await Promise.all([
+      const [cRes, likeRes, meRes, blockRes] = await Promise.all([
         fetch(`/api/comments?${query}`),
         fetch(`/api/comments/like`),
         fetch(`/api/auth/me`),
+        fetch(`/api/blocks`),
       ]);
       if (cRes.ok) {
         const data = (await cRes.json()) as any;
@@ -141,6 +143,10 @@ export default function CommentSection({ type, slug, chapter }: Props) {
       if (likeRes.ok) {
         const data = (await likeRes.json()) as any;
         setLiked(data.liked || []);
+      }
+      if (blockRes.ok) {
+        const data = (await blockRes.json()) as any;
+        setBlocked(data.blocked || []);
       }
       if (meRes.ok) {
         const data = (await meRes.json()) as any;
@@ -342,7 +348,11 @@ export default function CommentSection({ type, slug, chapter }: Props) {
 
   const { icon, label } = titles[type];
   const totalCount = comments.reduce((s, c) => s + 1 + (c.replies?.length || 0), 0);
-  const visible = sort === "top" ? [...comments].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0)) : comments;
+  const unblocked = comments
+    .map((c) => ({ ...c, replies: (c.replies || []).filter((r) => !blocked.includes(r.userId)) }))
+    .filter((c) => !blocked.includes(c.userId));
+  const hiddenCount = totalCount - unblocked.reduce((s, c) => s + 1 + (c.replies?.length || 0), 0);
+  const visible = sort === "top" ? [...unblocked].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0)) : unblocked;
 
   function renderComment(c: CommentItem | ReplyItem, isReply = false, parentId?: string) {
     const isLiked = liked.includes(c.id);
@@ -639,6 +649,9 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                   {(c.replies || []).map((r) => renderComment(r, true, c.id))}
                 </div>
               ))
+            )}
+            {hiddenCount > 0 && (
+              <p className="text-center text-[11px] text-gray-600">Engellediğin kullanıcılardan {hiddenCount} yorum gizlendi.</p>
             )}
           </div>
         </div>

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { announcements, notifications, users, seriesFollows } from "@/lib/db/schema";
+import { announcements, notifications, users, seriesFollows, siteSettings } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
-import { getManga } from "@/data/mangas";
+import { getManga, mangaCover } from "@/data/mangas";
+import { SITE_URL } from "@/lib/site";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -40,7 +41,34 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ id, notified: followers.length });
+    // Discord webhook'a düş (ayarlıysa)
+    let discordSent = false;
+    try {
+      const [hook] = await db.select().from(siteSettings).where(eq(siteSettings.key, "discord_webhook"));
+      const url = (hook as any)?.value;
+      if (url) {
+        const meta2 = meta ? { cover: mangaCover(meta) } : null;
+        await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: "MangaAlemi",
+            embeds: [
+              {
+                title,
+                description: message,
+                url: `${SITE_URL}${link}`,
+                color: 37632,
+                ...(meta2 ? { thumbnail: { url: `${SITE_URL}${meta2.cover}` } } : {}),
+              },
+            ],
+          }),
+        });
+        discordSent = true;
+      }
+    } catch { /* discord hatası duyuruyu engellemesin */ }
+
+    return NextResponse.json({ id, notified: followers.length, discordSent });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

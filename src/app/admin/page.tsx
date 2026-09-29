@@ -34,6 +34,10 @@ export default function AdminPage() {
   const [ncResult, setNcResult] = useState("");
   const [requests, setRequests] = useState<any[]>([]);
   const [siteStats, setSiteStats] = useState<any | null>(null);
+  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [webhook, setWebhook] = useState("");
+  const [maintMsg, setMaintMsg] = useState("");
+  const [savingSettings, setSavingSettings] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
   const router = useRouter();
 
@@ -69,10 +73,16 @@ export default function AdminPage() {
     setTabLoading(true);
     try {
       if (tab === "overview") {
-        const res = await fetch("/api/admin/stats");
-        if (res.ok) {
-          const d = (await res.json()) as any;
+        const [sRes, setRes] = await Promise.all([fetch("/api/admin/stats"), fetch("/api/admin/settings")]);
+        if (sRes.ok) {
+          const d = (await sRes.json()) as any;
           setSiteStats(d);
+        }
+        if (setRes.ok) {
+          const d = (await setRes.json()) as any;
+          setSettings(d.settings || {});
+          setWebhook(d.settings?.discord_webhook || "");
+          setMaintMsg(d.settings?.maintenance_message || "");
         }
       }
       if (tab === "users") {
@@ -211,7 +221,7 @@ export default function AdminPage() {
       });
       const data = (await res.json()) as any;
       if (res.ok) {
-        setNcResult(`✓ Duyuruldu, ${data.notified} takipçiye bildirim gitti.`);
+        setNcResult(`✓ Duyuruldu, ${data.notified} takipçiye bildirim gitti.${data.discordSent ? " Discord'a da düştü." : ""}`);
         setNcSlug("");
         setNcChapter("");
       } else {
@@ -252,6 +262,25 @@ export default function AdminPage() {
     });
     if (res.ok) alert(`${slug} vitrine çıkarıldı!`);
     else alert("Ayarlanamadı.");
+  }
+
+  async function saveSetting(key: string, value: string) {
+    setSavingSettings(true);
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value }),
+      });
+      const data = (await res.json()) as any;
+      if (res.ok) {
+        setSettings((prev) => ({ ...prev, [key]: value }));
+      } else {
+        alert(data.error || "Kaydedilemedi.");
+      }
+    } finally {
+      setSavingSettings(false);
+    }
   }
 
   async function updateRequest(id: string, status: string, adminNote?: string) {
@@ -364,6 +393,50 @@ export default function AdminPage() {
 
           {siteStats ? (
             <>
+              <div className="glass-panel rounded-2xl p-6 border border-white/10 space-y-4">
+                <h3 className="font-bold text-white">Site Ayarları</h3>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="text-sm text-white font-medium">Bakım modu {settings.maintenance_mode === "1" ? "(AÇIK)" : "(kapalı)"}</p>
+                    <p className="text-xs text-gray-500">Açıkken üyeler /bakim sayfasını görür, adminler girmeye devam eder.</p>
+                  </div>
+                  <button
+                    onClick={() => saveSetting("maintenance_mode", settings.maintenance_mode === "1" ? "0" : "1")}
+                    disabled={savingSettings}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold border transition-colors disabled:opacity-50 ${
+                      settings.maintenance_mode === "1"
+                        ? "bg-yellow-500/15 border-yellow-500/40 text-yellow-400"
+                        : "bg-surface-light border-white/10 text-gray-300"
+                    }`}
+                  >
+                    {settings.maintenance_mode === "1" ? "Kapat" : "Aç"}
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={maintMsg}
+                    onChange={(e) => setMaintMsg(e.target.value)}
+                    maxLength={300}
+                    placeholder="Bakım mesajı..."
+                    className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50"
+                  />
+                  <button onClick={() => saveSetting("maintenance_message", maintMsg)} disabled={savingSettings} className="px-4 py-2.5 rounded-xl bg-surface-light border border-white/10 text-xs font-bold text-gray-200 hover:border-primary/40 disabled:opacity-50">
+                    Kaydet
+                  </button>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={webhook}
+                    onChange={(e) => setWebhook(e.target.value)}
+                    placeholder="Discord webhook URL (https://discord.com/api/webhooks/...)"
+                    className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50"
+                  />
+                  <button onClick={() => saveSetting("discord_webhook", webhook.trim())} disabled={savingSettings} className="px-4 py-2.5 rounded-xl bg-surface-light border border-white/10 text-xs font-bold text-gray-200 hover:border-primary/40 disabled:opacity-50">
+                    Kaydet
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-600">Webhook kayıtlıysa yeni bölüm duyuruları Discord kanalına otomatik düşer.</p>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {[
                   { label: "Üye", value: siteStats.totals.users },

@@ -9,7 +9,7 @@ interface Props {
 
 export default function ReadingTracker({ mangaSlug, chapterNumber, totalPages }: Props) {
   useEffect(() => {
-    // Sayfa yüklendiğinde okuma geçmişini kaydet
+    // Sayfa yüklendiğinde okuma geçmişini kaydet + görüntülenme say
     async function trackReading() {
       try {
         await fetch("/api/reading-history", {
@@ -23,6 +23,15 @@ export default function ReadingTracker({ mangaSlug, chapterNumber, totalPages }:
         });
       } catch {
         // Giriş yapılmamışsa sessizce geç
+      }
+      try {
+        await fetch("/api/chapters/stats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slug: mangaSlug, chapter: String(chapterNumber), action: "view" }),
+        });
+      } catch {
+        // Sayaç hatası okumayı engellemesin
       }
     }
     trackReading();

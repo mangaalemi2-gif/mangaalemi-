@@ -33,6 +33,7 @@ export default function PublicProfilePage() {
   const [showReport, setShowReport] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -45,6 +46,13 @@ export default function PublicProfilePage() {
         const json = (await res.json()) as ProfileData;
         setData(json);
         setFollowing(json.follow?.isFollowing ?? false);
+        try {
+          const bRes = await fetch("/api/blocks");
+          if (bRes.ok) {
+            const b = (await bRes.json()) as any;
+            setIsBlocked((b.blocked || []).includes(json.user.id));
+          }
+        } catch { /* yoksay */ }
       } finally {
         setLoading(false);
       }
@@ -91,6 +99,28 @@ export default function PublicProfilePage() {
       setFollowing(prev);
     } finally {
       setFollowLoading(false);
+    }
+  }
+
+  async function toggleBlock() {
+    if (!confirm(isBlocked ? "Engeli kaldırmak istiyor musun?" : "Bu kullanıcıyı engellemek istiyor musun? Yorumlarını görmezsin.")) return;
+    const prev = isBlocked;
+    setIsBlocked(!prev);
+    try {
+      const res = await fetch("/api/blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: user.id }),
+      });
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      const d = (await res.json()) as any;
+      if (res.ok) setIsBlocked(d.blocked);
+      else setIsBlocked(prev);
+    } catch {
+      setIsBlocked(prev);
     }
   }
 
@@ -150,6 +180,16 @@ export default function PublicProfilePage() {
             >
               <Flag className="w-3.5 h-3.5" /> Kullanıcıyı Bildir
             </button>
+            {!data.isSelf && (
+              <button
+                onClick={toggleBlock}
+                className={`px-4 py-2 rounded-xl border text-xs font-bold transition-colors ${
+                  isBlocked ? "bg-surface-light border-white/10 text-gray-300" : "bg-surface-light border-white/10 text-gray-400 hover:text-red-400 hover:border-red-500/30"
+                }`}
+              >
+                {isBlocked ? "Engeli Kaldır" : "Engelle"}
+              </button>
+            )}
           </div>
         </div>
       </div>
