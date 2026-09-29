@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
         email: me.email,
         role: me.role,
         avatarUrl: me.avatarUrl,
+        coverUrl: (me as any).coverUrl ?? null,
         bio: (me as any).bio ?? null,
         badge: me.badge,
         createdAt: me.createdAt,
@@ -79,7 +80,7 @@ export async function PATCH(req: NextRequest) {
     const db = getDb();
 
     const body = (await req.json()) as any;
-    const { bio, avatarUrl, username, currentPassword, newPassword } = body;
+    const { bio, avatarUrl, coverUrl, username, currentPassword, newPassword } = body;
 
     const [me] = await db.select().from(users).where(eq(users.id, session.userId));
     if (!me) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
@@ -92,8 +93,13 @@ export async function PATCH(req: NextRequest) {
     }
     if (avatarUrl !== undefined) {
       if (avatarUrl && avatarUrl.length > 500) return NextResponse.json({ error: "Avatar URL çok uzun." }, { status: 400 });
-      if (avatarUrl && !/^https?:\/\/.+/.test(avatarUrl)) return NextResponse.json({ error: "Avatar geçerli bir URL olmalı (https://...)." }, { status: 400 });
+      if (avatarUrl && !/^https?:\/\/.+/.test(avatarUrl) && !avatarUrl.startsWith("/api/uploads/")) return NextResponse.json({ error: "Avatar geçerli bir URL olmalı (https://...)." }, { status: 400 });
       update.avatarUrl = avatarUrl?.trim() || null;
+    }
+    if (coverUrl !== undefined) {
+      if (coverUrl && coverUrl.length > 500) return NextResponse.json({ error: "Kapak URL çok uzun." }, { status: 400 });
+      if (coverUrl && !/^https?:\/\/.+/.test(coverUrl) && !coverUrl.startsWith("/api/uploads/")) return NextResponse.json({ error: "Kapak geçerli bir URL olmalı (https://...)." }, { status: 400 });
+      update.coverUrl = coverUrl?.trim() || null;
     }
     if (username !== undefined && username !== me.username) {
       const clean = username.trim();

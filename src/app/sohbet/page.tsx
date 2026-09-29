@@ -1,4 +1,5 @@
 import CommentSection from "@/components/CommentSection";
+import OnlineNow from "@/components/OnlineNow";
 import { MessagesSquare, ShieldCheck, Ban, Heart } from "lucide-react";
 
 export const metadata = {
@@ -15,6 +16,7 @@ export default function SohbetPage() {
           <div className="flex items-center gap-3 mb-2">
             <MessagesSquare className="w-7 h-7 text-primary" />
             <h1 className="text-3xl font-extrabold text-white">Genel Sohbet</h1>
+            <OnlineNow />
           </div>
           <p className="text-gray-400 text-sm leading-relaxed">
             Tüm topluluğun buluşma noktası. Manga, anime, bölüm teorileri — aklında ne varsa yaz. Yazdıkça birikir, beğenilerle öne çıkar.

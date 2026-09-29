@@ -20,6 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
         id: users.id,
         username: users.username,
         avatarUrl: users.avatarUrl,
+        coverUrl: users.coverUrl,
         bio: users.bio,
         badge: users.badge,
         role: users.role,

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy, Compass, Trophy, Mail, BookPlus } from "lucide-react";
+import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy, Compass, Trophy, Mail, BookPlus, Award } from "lucide-react";
 import { useState, useEffect } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -16,6 +16,7 @@ const NAV_LINKS = [
   { href: "/sohbet", label: "Sohbet", icon: MessagesSquare },
   { href: "/anketler", label: "Anketler", icon: BarChart3 },
   { href: "/liderlik", label: "Liderlik", icon: Trophy },
+  { href: "/rozetler", label: "Rozetler", icon: Award },
   { href: "/seri-oner", label: "Seri Öner", icon: BookPlus },
   { href: "/destek", label: "Destek", icon: LifeBuoy },
 ];

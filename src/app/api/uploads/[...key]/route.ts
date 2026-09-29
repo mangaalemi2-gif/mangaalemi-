@@ -13,12 +13,12 @@ function getBucket() {
   }
 }
 
-// GET: /api/uploads/avatars/... veya /api/uploads/comments/...
+// GET: /api/uploads/avatars/... veya /api/uploads/covers/... veya /api/uploads/comments/...
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ key: string[] }> }) {
   try {
     const { key } = await params;
     const objectKey = (key || []).join("/");
-    if (!objectKey || (!objectKey.startsWith("avatars/") && !objectKey.startsWith("comments/"))) {
+    if (!objectKey || (!objectKey.startsWith("avatars/") && !objectKey.startsWith("covers/") && !objectKey.startsWith("comments/"))) {
       return NextResponse.json({ error: "Bulunamadı." }, { status: 404 });
     }
 

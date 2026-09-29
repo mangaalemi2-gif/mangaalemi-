@@ -66,6 +66,11 @@ export async function getSession(req: Request): Promise<{ userId: string; sessio
       } catch { /* yoksay */ }
       return null;
     }
+    // Çevrimiçi takibi (hata olursa sessiz geç)
+    try {
+      const { users } = await import("@/lib/db/schema");
+      await db.update(users).set({ lastSeen: new Date() }).where(eq(users.id, session.userId));
+    } catch { /* yoksay */ }
     return { userId: session.userId, sessionId: session.id };
   } catch {
     return null;

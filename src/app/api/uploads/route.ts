@@ -6,11 +6,13 @@ export const runtime = "nodejs";
 
 const ALLOWED: Record<string, string[]> = {
   avatar: ["image/jpeg", "image/png", "image/webp"],
+  cover: ["image/jpeg", "image/png", "image/webp"],
   comment: ["image/jpeg", "image/png", "image/webp", "image/gif"],
 };
 
 const MAX_SIZE: Record<string, number> = {
   avatar: 2 * 1024 * 1024,
+  cover: 3 * 1024 * 1024,
   comment: 5 * 1024 * 1024,
 };
 
@@ -25,7 +27,7 @@ function getBucket() {
   }
 }
 
-// POST: Dosya yükle (FormData: file, kind=avatar|comment)
+// POST: Dosya yükle (FormData: file, kind=avatar|cover|comment)
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession(req);

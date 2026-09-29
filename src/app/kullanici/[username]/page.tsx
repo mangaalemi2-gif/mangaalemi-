@@ -11,6 +11,7 @@ interface ProfileData {
     id: string;
     username: string;
     avatarUrl: string | null;
+    coverUrl: string | null;
     bio: string | null;
     badge: string | null;
     role: string | null;
@@ -34,6 +35,7 @@ export default function PublicProfilePage() {
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [badges, setBadges] = useState<any[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -47,10 +49,17 @@ export default function PublicProfilePage() {
         setData(json);
         setFollowing(json.follow?.isFollowing ?? false);
         try {
-          const bRes = await fetch("/api/blocks");
+          const [bRes, badgeRes] = await Promise.all([
+            fetch("/api/blocks"),
+            fetch(`/api/badges?user=${encodeURIComponent(username)}`),
+          ]);
           if (bRes.ok) {
             const b = (await bRes.json()) as any;
             setIsBlocked((b.blocked || []).includes(json.user.id));
+          }
+          if (badgeRes.ok) {
+            const b = (await badgeRes.json()) as any;
+            setBadges(b.badges || []);
           }
         } catch { /* yoksay */ }
       } finally {
@@ -126,7 +135,13 @@ export default function PublicProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
-      <div className="glass-panel rounded-3xl p-8 border border-white/10 relative overflow-hidden">
+      <div className="glass-panel rounded-3xl border border-white/10 relative overflow-hidden">
+        {user.coverUrl && (
+          <div className="h-32 sm:h-40 w-full overflow-hidden">
+            <img src={user.coverUrl} alt="Kapak" className="w-full h-full object-cover" />
+          </div>
+        )}
+        <div className="p-8">
         <div className="absolute -top-16 -right-16 w-64 h-64 bg-accent/10 blur-[80px] rounded-full pointer-events-none" />
         <div className="relative z-10 flex flex-col sm:flex-row items-center gap-6">
           {user.avatarUrl ? (
@@ -143,6 +158,13 @@ export default function PublicProfilePage() {
               {user.badge && <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/30 font-bold">{user.badge}</span>}
             </div>
             {user.bio ? <p className="text-gray-300 text-sm mt-2 leading-relaxed">{user.bio}</p> : <p className="text-gray-600 text-sm mt-2 italic">Henüz biyografi yazmamış.</p>}
+            {badges.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                {badges.map((b: any) => (
+                  <span key={b.id} title={b.name} className="text-xl leading-none">{b.icon}</span>
+                ))}
+              </div>
+            )}
             <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/25">
               <span className="text-xs font-extrabold text-primary">Sv. {data.level.level} • {data.level.title}</span>
               <span className="text-[11px] text-gray-400">{data.xp} XP</span>
@@ -191,6 +213,7 @@ export default function PublicProfilePage() {
               </button>
             )}
           </div>
+        </div>
         </div>
       </div>
 

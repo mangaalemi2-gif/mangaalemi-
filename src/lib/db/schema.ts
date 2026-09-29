@@ -7,9 +7,11 @@ export const users = sqliteTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
   avatarUrl: text("avatar_url"),
+  coverUrl: text("cover_url"),
   bio: text("bio"),
   role: text("role").default("member"),
   badge: text("badge"),
+  lastSeen: integer("last_seen", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
@@ -192,6 +194,21 @@ export const bans = sqliteTable("bans", {
   reason: text("reason").notNull(),
   expiresAt: integer("expires_at"),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Rozet mağazası
+export const badges = sqliteTable("badges", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  icon: text("icon").notNull(),
+  costXp: integer("cost_xp").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+export const userBadges = sqliteTable("user_badges", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  badgeId: text("badge_id").notNull().references(() => badges.id, { onDelete: "cascade" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 

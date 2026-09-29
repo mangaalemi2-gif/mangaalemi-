@@ -11,6 +11,7 @@ interface UserData {
   email: string;
   role: string;
   avatarUrl: string | null;
+  coverUrl: string | null;
   bio: string | null;
   badge: string | null;
   createdAt: any;
@@ -74,10 +75,13 @@ export default function ProfilePage() {
   // form
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [coverUrl, setCoverUrl] = useState("");
   const [username, setUsername] = useState("");
   const [curPass, setCurPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [badges, setBadges] = useState<any[]>([]);
   const [delPass, setDelPass] = useState("");
   const [delConfirm, setDelConfirm] = useState("");
   const router = useRouter();
@@ -85,7 +89,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes, mlRes] = await Promise.all([
+        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes, mlRes, badgeRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/reading-history"),
@@ -95,6 +99,7 @@ export default function ProfilePage() {
           fetch("/api/series-follow"),
           fetch("/api/streaks"),
           fetch("/api/mylist"),
+          fetch("/api/badges"),
         ]);
 
         if (!meRes.ok) {
@@ -110,6 +115,7 @@ export default function ProfilePage() {
             setUser(p.user);
             setBio(p.user.bio || "");
             setAvatarUrl(p.user.avatarUrl || "");
+            setCoverUrl(p.user.coverUrl || "");
             setUsername(p.user.username || "");
           }
           setStats(p.stats || null);
@@ -151,6 +157,11 @@ export default function ProfilePage() {
           const m = (await mlRes.json()) as any;
           setMyList(m.list || []);
         }
+        if (badgeRes.ok) {
+          const b = (await badgeRes.json()) as any;
+          const ownedIds: string[] = b.owned || [];
+          setBadges((b.badges || []).filter((x: any) => ownedIds.includes(x.id)));
+        }
       } catch {
         router.push("/login");
       } finally {
@@ -175,7 +186,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio, avatarUrl, username }),
+        body: JSON.stringify({ bio, avatarUrl, coverUrl, username }),
       });
       const data = (await res.json()) as any;
       if (!res.ok) {
@@ -257,6 +268,30 @@ export default function ProfilePage() {
       }
     } finally {
       setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  }
+
+  async function handleCoverPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCover(true);
+    setSaveErr("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("kind", "cover");
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const data = (await res.json()) as any;
+      if (res.ok) {
+        setCoverUrl(data.url);
+        setSaveMsg("✓ Kapak yüklendi, Kaydet'e basmayı unutma!");
+        setTimeout(() => setSaveMsg(""), 3000);
+      } else {
+        setSaveErr(data.error || "Yüklenemedi.");
+      }
+    } finally {
+      setUploadingCover(false);
       e.target.value = "";
     }
   }
@@ -388,7 +423,14 @@ export default function ProfilePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
       {/* Profil Başlığı */}
-      <div className="glass-panel rounded-3xl p-8 border border-white/10 shadow-2xl relative overflow-hidden">
+      <div className="glass-panel rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden">
+        {user.coverUrl && (
+          <div className="h-36 sm:h-44 w-full overflow-hidden">
+            <img src={user.coverUrl} alt="Kapak" className="w-full h-full object-cover" />
+            <div className="h-12 -mt-12 bg-gradient-to-t from-black/60 to-transparent" />
+          </div>
+        )}
+        <div className="p-8">
         <div className="absolute -top-16 -right-16 w-64 h-64 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-64 h-64 bg-accent/10 blur-[80px] rounded-full pointer-events-none" />
 
@@ -417,6 +459,14 @@ export default function ProfilePage() {
             </div>
             <p className="text-gray-400 text-sm">{user.email}</p>
             {user.bio && <p className="text-gray-300 text-sm mt-2 max-w-lg">{user.bio}</p>}
+            {badges.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                {badges.map((b: any) => (
+                  <span key={b.id} title={b.name} className="text-xl leading-none">{b.icon}</span>
+                ))}
+                <Link href="/rozetler" className="text-[11px] text-accent hover:underline ml-1">Mağaza</Link>
+              </div>
+            )}
             {level && (
               <div className="mt-3 max-w-md">
                 <div className="flex items-center justify-between text-xs mb-1">
@@ -454,6 +504,7 @@ export default function ProfilePage() {
               <LogOut className="w-4 h-4" /> Çıkış Yap
             </button>
           </div>
+        </div>
         </div>
       </div>
 
@@ -773,6 +824,17 @@ export default function ProfilePage() {
                 </label>
               </div>
               {avatarUrl && <img src={avatarUrl} alt="Avatar önizleme" className="mt-2 w-16 h-16 rounded-full object-cover border border-white/10" />}
+            </div>
+            <div>
+              <label className="text-xs text-gray-400">Kapak resmi (dosya yükle veya URL yapıştır)</label>
+              <div className="mt-1 flex gap-2">
+                <input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} placeholder="https://..." className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50" />
+                <label className={`px-4 py-2.5 rounded-xl bg-surface-light border border-white/10 text-xs font-bold text-gray-200 cursor-pointer hover:border-primary/40 transition-colors flex items-center ${uploadingCover ? "opacity-50" : ""}`}>
+                  {uploadingCover ? "..." : "Yükle"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleCoverPick} disabled={uploadingCover} />
+                </label>
+              </div>
+              {coverUrl && <img src={coverUrl} alt="Kapak önizleme" className="mt-2 w-full h-24 rounded-xl object-cover border border-white/10" />}
             </div>
             <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-bold hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50">
               <Save className="w-4 h-4" /> {saving ? "Kaydediliyor..." : "Kaydet"}

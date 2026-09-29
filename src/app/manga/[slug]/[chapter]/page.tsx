@@ -5,6 +5,7 @@ import mangaManifest from "@/data/manga-manifest.json";
 import ReadingTracker from "./ReadingTracker";
 import ReaderSettings from "@/components/ReaderSettings";
 import ReadingProgress from "@/components/ReadingProgress";
+import PageNavigator from "@/components/PageNavigator";
 import ChapterActions from "@/components/ChapterActions";
 import CommentSection from "@/components/CommentSection";
 
@@ -104,6 +105,7 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
           />
         ))}
       </div>
+      <PageNavigator total={images.length} />
 
       {/* Alt Navigasyon Barı */}
       <div className="flex items-center justify-between mt-12 mb-8 glass-panel p-4 rounded-full">

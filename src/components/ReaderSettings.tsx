@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Settings2, Sun, UnfoldVertical, Keyboard } from "lucide-react";
+import { Settings2, Sun, UnfoldVertical, Keyboard, BookOpen } from "lucide-react";
+import { getReaderMode, setReaderMode, type ReaderMode } from "./PageNavigator";
 
 type Width = "narrow" | "wide" | "full";
 
@@ -16,6 +17,7 @@ export default function ReaderSettings({
   const [open, setOpen] = useState(false);
   const [brightness, setBrightness] = useState(100);
   const [width, setWidth] = useState<Width>("narrow");
+  const [mode, setModeState] = useState<ReaderMode>("scroll");
   const router = useRouter();
 
   // Kayıtlı ayarları yükle + uygula
@@ -25,6 +27,7 @@ export default function ReaderSettings({
       const w = (localStorage.getItem("reader-width") || "narrow") as Width;
       if (!isNaN(b)) setBrightness(Math.min(130, Math.max(40, b)));
       if (["narrow", "wide", "full"].includes(w)) setWidth(w);
+      setModeState(getReaderMode());
     } catch { /* yoksay */ }
   }, []);
 
@@ -41,11 +44,14 @@ export default function ReaderSettings({
     }
   }, [brightness, width]);
 
-  // Klavye: sağ/sol ok = sonraki/önceki bölüm
+  // Klavye: kaydırma modunda sağ/sol ok = sonraki/önceki bölüm
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
+      try {
+        if (localStorage.getItem("reader-mode") === "page") return; // sayfa modu kendi tuşlarını yönetir
+      } catch { /* yoksay */ }
       if (e.key === "ArrowRight" && nextHref) router.push(nextHref);
       if (e.key === "ArrowLeft" && prevHref) router.push(prevHref);
     }
@@ -64,6 +70,24 @@ export default function ReaderSettings({
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-72 glass-panel rounded-2xl border border-white/10 p-4 shadow-2xl z-50 space-y-4">
+          <div>
+            <label className="text-xs text-gray-400 flex items-center gap-1.5 mb-2">
+              <BookOpen className="w-3.5 h-3.5" /> Okuma şekli
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(["scroll", "page"] as ReaderMode[]).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { setReaderMode(m); setModeState(m); }}
+                  className={`px-2 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                    mode === m ? "bg-primary/20 border-primary/50 text-primary" : "bg-surface border-white/10 text-gray-400"
+                  }`}
+                >
+                  {m === "scroll" ? "Kaydırma" : "Sayfa sayfa"}
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="text-xs text-gray-400 flex items-center gap-1.5 mb-2">
               <Sun className="w-3.5 h-3.5" /> Parlaklık %{brightness}
@@ -96,7 +120,7 @@ export default function ReaderSettings({
             </div>
           </div>
           <p className="text-[11px] text-gray-600 flex items-center gap-1.5">
-            <Keyboard className="w-3.5 h-3.5" /> ← → tuşlarıyla bölüm değiştir
+            <Keyboard className="w-3.5 h-3.5" /> Kaydırmada ← → bölüm, sayfada ↑ ↓ sayfa değiştirir
           </p>
         </div>
       )}
