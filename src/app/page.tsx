@@ -42,7 +42,7 @@ export default function Home() {
                 <p className="text-xs text-primary mt-1">Yıl: 1984</p>
               </div>
               <div className="w-full h-full bg-orange-900 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center text-4xl shadow-inner">
-                <img src="/mangas/dragon-ball-1984/Chapter1/1.jpg" alt="Dragon Ball" className="w-full h-full object-cover" />
+                <img src="/mangas/dragon-ball-1984/cover.png" alt="Dragon Ball" className="w-full h-full object-cover" />
               </div>
             </div>
           </Link>

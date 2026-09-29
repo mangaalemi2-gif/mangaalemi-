@@ -12,6 +12,12 @@ export const users = sqliteTable("users", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: integer("expires_at").notNull(),
+});
+
 export const mangas = sqliteTable("mangas", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
@@ -32,4 +38,13 @@ export const chapters = sqliteTable("chapters", {
   title: text("title"),
   viewCount: integer("view_count").default(0),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+export const readingHistory = sqliteTable("reading_history", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mangaSlug: text("manga_slug").notNull(),
+  chapterNumber: real("chapter_number").notNull(),
+  pageNumber: integer("page_number").default(1),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
