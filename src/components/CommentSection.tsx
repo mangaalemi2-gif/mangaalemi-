@@ -109,6 +109,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
 
   const context = type;
   const query = `context=${context}${slug ? `&slug=${encodeURIComponent(slug)}` : ""}${chapter ? `&chapter=${encodeURIComponent(chapter)}` : ""}`;
+  const draftKey = `draft:${context}:${slug || "-"}:${chapter || "-"}`;
 
   const fetchComments = useCallback(async () => {
     setLoading(true);
@@ -165,6 +166,11 @@ export default function CommentSection({ type, slug, chapter }: Props) {
 
   useEffect(() => {
     fetchComments();
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (saved) setText(saved);
+    } catch { /* yoksay */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchComments]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -191,6 +197,9 @@ export default function CommentSection({ type, slug, chapter }: Props) {
         setText("");
         setSpoiler(false);
         setImageUrl(null);
+        try {
+          localStorage.removeItem(draftKey);
+        } catch { /* yoksay */ }
       }
     } finally {
       setSending(false);
@@ -564,7 +573,13 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                 <textarea
                   placeholder={type === "feedback" ? "Site hakkında önerin nedir?" : type === "chat" ? "Sohbete katıl... (küfür/spam yasak)" : "Düşüncelerini paylaş..."}
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => {
+                    setText(e.target.value);
+                    try {
+                      if (e.target.value.trim()) localStorage.setItem(draftKey, e.target.value);
+                      else localStorage.removeItem(draftKey);
+                    } catch { /* yoksay */ }
+                  }}
                   rows={3}
                   maxLength={2000}
                   className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors resize-none"

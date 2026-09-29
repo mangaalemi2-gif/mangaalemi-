@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp, Heart, Trophy, Flame, Target } from "lucide-react";
+import { ACCENTS, applyAccent } from "@/components/ThemeToggle";
 import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
@@ -76,12 +77,14 @@ export default function ProfilePage() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [coverUrl, setCoverUrl] = useState("");
+  const [accentHex, setAccentHex] = useState("");
   const [username, setUsername] = useState("");
   const [curPass, setCurPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [badges, setBadges] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
   const [delPass, setDelPass] = useState("");
   const [delConfirm, setDelConfirm] = useState("");
   const router = useRouter();
@@ -89,7 +92,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes, mlRes, badgeRes] = await Promise.all([
+        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes, mlRes, badgeRes, achRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/reading-history"),
@@ -100,6 +103,7 @@ export default function ProfilePage() {
           fetch("/api/streaks"),
           fetch("/api/mylist"),
           fetch("/api/badges"),
+          fetch("/api/achievements"),
         ]);
 
         if (!meRes.ok) {
@@ -116,6 +120,7 @@ export default function ProfilePage() {
             setBio(p.user.bio || "");
             setAvatarUrl(p.user.avatarUrl || "");
             setCoverUrl(p.user.coverUrl || "");
+            setAccentHex(p.user.accent || "");
             setUsername(p.user.username || "");
           }
           setStats(p.stats || null);
@@ -162,6 +167,10 @@ export default function ProfilePage() {
           const ownedIds: string[] = b.owned || [];
           setBadges((b.badges || []).filter((x: any) => ownedIds.includes(x.id)));
         }
+        if (achRes.ok) {
+          const a = (await achRes.json()) as any;
+          setAchievements((a.achievements || []).filter((x: any) => x.earnedAt));
+        }
       } catch {
         router.push("/login");
       } finally {
@@ -186,7 +195,7 @@ export default function ProfilePage() {
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bio, avatarUrl, coverUrl, username }),
+        body: JSON.stringify({ bio, avatarUrl, coverUrl, accent: accentHex, username }),
       });
       const data = (await res.json()) as any;
       if (!res.ok) {
@@ -465,6 +474,14 @@ export default function ProfilePage() {
                   <span key={b.id} title={b.name} className="text-xl leading-none">{b.icon}</span>
                 ))}
                 <Link href="/rozetler" className="text-[11px] text-accent hover:underline ml-1">Mağaza</Link>
+              </div>
+            )}
+            {achievements.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                {achievements.map((a: any) => (
+                  <span key={a.id} title={`${a.name} — ${a.description}`} className="text-xl leading-none">{a.icon}</span>
+                ))}
+                <span className="text-[11px] text-gray-500 ml-1">{achievements.length} başarım</span>
               </div>
             )}
             {level && (
@@ -809,6 +826,28 @@ export default function ProfilePage() {
             <div>
               <label className="text-xs text-gray-400">Kullanıcı adı</label>
               <input value={username} onChange={(e) => setUsername(e.target.value)} maxLength={30} className="mt-1 w-full bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-primary/50" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400">Vurgu rengi (sitedeki mor renk senin seçtiğin olur)</label>
+              <div className="mt-2 flex gap-2 flex-wrap">
+                {ACCENTS.map((a) => (
+                  <button
+                    key={a.hex}
+                    type="button"
+                    onClick={() => { setAccentHex(a.hex); applyAccent(a.rgb); }}
+                    title={a.name}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-transform border-2 ${accentHex.toLowerCase() === a.hex.toLowerCase() ? "border-white" : "border-transparent"}`}
+                    style={{ backgroundColor: a.hex }}
+                  >
+                    {accentHex.toLowerCase() === a.hex.toLowerCase() && <span className="text-white text-xs keep-white">✓</span>}
+                  </button>
+                ))}
+                {accentHex && (
+                  <button type="button" onClick={() => { setAccentHex(""); applyAccent(ACCENTS[0].rgb); }} className="text-[11px] text-gray-500 hover:text-gray-300 underline">
+                    Sıfırla
+                  </button>
+                )}
+              </div>
             </div>
             <div>
               <label className="text-xs text-gray-400">Biyografi (max 500)</label>

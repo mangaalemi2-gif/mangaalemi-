@@ -12,7 +12,7 @@ const config: Config = {
         background: "rgb(var(--c-bg) / <alpha-value>)",
         foreground: "rgb(var(--c-fg) / <alpha-value>)",
         primary: "#39FF14", // Neon Green
-        accent: "#9D00FF", // Neon Purple
+        accent: "rgb(var(--c-accent) / <alpha-value>)",
         surface: "rgb(var(--c-surface) / <alpha-value>)",
         "surface-light": "rgb(var(--c-slight) / <alpha-value>)",
       },

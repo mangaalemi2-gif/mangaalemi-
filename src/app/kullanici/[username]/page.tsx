@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { User, Flag, MessageSquare, ThumbsUp, Calendar, Mail } from "lucide-react";
 import ReportModal from "@/components/ReportModal";
+import WallSection from "@/components/WallSection";
 
 interface ProfileData {
   user: {
@@ -36,6 +37,8 @@ export default function PublicProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [badges, setBadges] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<any[]>([]);
+  const [myList, setMyList] = useState<any[]>([]);
 
   useEffect(() => {
     async function load() {
@@ -49,9 +52,11 @@ export default function PublicProfilePage() {
         setData(json);
         setFollowing(json.follow?.isFollowing ?? false);
         try {
-          const [bRes, badgeRes] = await Promise.all([
+          const [bRes, badgeRes, achRes, listRes] = await Promise.all([
             fetch("/api/blocks"),
             fetch(`/api/badges?user=${encodeURIComponent(username)}`),
+            fetch(`/api/achievements?user=${encodeURIComponent(username)}`),
+            fetch(`/api/mylist?user=${encodeURIComponent(username)}`),
           ]);
           if (bRes.ok) {
             const b = (await bRes.json()) as any;
@@ -61,6 +66,14 @@ export default function PublicProfilePage() {
             const b = (await badgeRes.json()) as any;
             setBadges(b.badges || []);
           }
+          if (achRes.ok) {
+            const a = (await achRes.json()) as any;
+            setAchievements((a.achievements || []).filter((x: any) => x.earnedAt));
+          }
+          if (listRes.ok) {
+            const l = (await listRes.json()) as any;
+            setMyList(l.list || []);
+          }
         } catch { /* yoksay */ }
       } finally {
         setLoading(false);
@@ -68,6 +81,14 @@ export default function PublicProfilePage() {
     }
     if (username) load();
   }, [username]);
+
+  const LIST_LABEL: Record<string, string> = {
+    reading: "Okuyorum",
+    completed: "Tamamladım",
+    on_hold: "Bekletiyorum",
+    dropped: "Bıraktım",
+    planning: "Planlıyorum",
+  };
 
   if (loading) {
     return <div className="min-h-[60vh] flex items-center justify-center text-gray-400 animate-pulse">Yükleniyor...</div>;
@@ -165,6 +186,14 @@ export default function PublicProfilePage() {
                 ))}
               </div>
             )}
+            {achievements.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                {achievements.map((a: any) => (
+                  <span key={a.id} title={`${a.name} — ${a.description}`} className="text-xl leading-none">{a.icon}</span>
+                ))}
+                <span className="text-[11px] text-gray-500 ml-1">{achievements.length} başarım</span>
+              </div>
+            )}
             <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/25">
               <span className="text-xs font-extrabold text-primary">Sv. {data.level.level} • {data.level.title}</span>
               <span className="text-[11px] text-gray-400">{data.xp} XP</span>
@@ -217,6 +246,8 @@ export default function PublicProfilePage() {
         </div>
       </div>
 
+      <WallSection username={user.username} profileUserId={user.id} />
+
       <div className="glass-panel rounded-3xl p-6 border border-white/10">
         <h2 className="font-bold text-white mb-4">Son Yorumları</h2>
         {recent.length === 0 ? (
@@ -234,6 +265,30 @@ export default function PublicProfilePage() {
           </div>
         )}
       </div>
+
+      {myList.length > 0 && (
+        <div className="glass-panel rounded-3xl p-6 border border-white/10">
+          <h2 className="font-bold text-white mb-4">Listesi</h2>
+          <div className="space-y-4">
+            {Object.keys(LIST_LABEL).map((st) => {
+              const items = myList.filter((x: any) => x.status === st);
+              if (items.length === 0) return null;
+              return (
+                <div key={st}>
+                  <p className="text-xs font-bold text-accent mb-2">{LIST_LABEL[st]} ({items.length})</p>
+                  <div className="flex flex-wrap gap-2">
+                    {items.map((x: any) => (
+                      <Link key={x.id} href={`/manga/${x.mangaSlug}`} className="px-3 py-1.5 rounded-xl bg-surface-light/50 border border-white/5 hover:border-accent/40 text-xs text-gray-200 transition-all">
+                        {x.mangaSlug}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {showReport && (
         <ReportModal targetType="user" targetId={user.id} targetLabel={`@${user.username}`} onClose={() => setShowReport(false)} />

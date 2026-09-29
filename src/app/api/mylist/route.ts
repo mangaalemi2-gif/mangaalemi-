@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { mangaList } from "@/lib/db/schema";
+import { mangaList, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { eq, and, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -9,14 +9,28 @@ export const runtime = "nodejs";
 
 export const STATUSES = ["reading", "completed", "on_hold", "dropped", "planning"];
 
-// GET: Listem (?slug= ile tek kontrol)
+// GET: Listem (?slug= tek kontrol, ?user=username herkese açık)
 export async function GET(req: NextRequest) {
   try {
-    const session = await getSession(req);
-    if (!session) return NextResponse.json({ list: [], status: null });
     const db = getDb();
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get("slug");
+    const forUser = searchParams.get("user");
+
+    if (forUser) {
+      const [u] = await db.select().from(users).where(eq(users.username, forUser));
+      if (!u) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
+      const rows = await db
+        .select()
+        .from(mangaList)
+        .where(eq(mangaList.userId, u.id))
+        .orderBy(sql`${mangaList.updatedAt} DESC`)
+        .limit(200);
+      return NextResponse.json({ list: rows });
+    }
+
+    const session = await getSession(req);
+    if (!session) return NextResponse.json({ list: [], status: null });
 
     if (slug) {
       const [row] = await db

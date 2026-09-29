@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: "Modern, hızlı ve kesintisiz manga okuma platformu. Favori serilerini takip et!",
 };
 
-const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t==="light"){document.documentElement.classList.remove("dark")}else{document.documentElement.classList.add("dark")}}catch(e){document.documentElement.classList.add("dark")}}})();`;
+const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t==="light"){document.documentElement.classList.remove("dark")}else{document.documentElement.classList.add("dark")}var a=localStorage.getItem("accent");if(a){document.documentElement.style.setProperty("--c-accent",a)}}catch(e){document.documentElement.classList.add("dark")}}})();`;
 
 export default function RootLayout({
   children,

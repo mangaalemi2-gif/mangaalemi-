@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         role: user.role,
         avatarUrl: user.avatarUrl,
         coverUrl: (user as any).coverUrl ?? null,
+        accent: (user as any).accent ?? null,
         bio: (user as any).bio ?? null,
         badge: user.badge,
         createdAt: user.createdAt,

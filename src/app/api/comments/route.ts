@@ -229,6 +229,12 @@ export async function POST(req: NextRequest) {
       }
     } catch { /* yoksay */ }
 
+    // Başarım kontrolü (bekletmeden, hatasız)
+    try {
+      const { checkAchievements } = await import("@/lib/achievements");
+      await checkAchievements(db, session.userId);
+    } catch { /* yoksay */ }
+
     // Yeni yorumu kullanıcı bilgileriyle döndür
     const [newComment] = await db
       .select({

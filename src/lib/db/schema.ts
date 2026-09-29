@@ -11,6 +11,7 @@ export const users = sqliteTable("users", {
   bio: text("bio"),
   role: text("role").default("member"),
   badge: text("badge"),
+  accent: text("accent"),
   lastSeen: integer("last_seen", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
@@ -209,6 +210,32 @@ export const badges = sqliteTable("badges", {
 export const userBadges = sqliteTable("user_badges", {
   userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   badgeId: text("badge_id").notNull().references(() => badges.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Ziyaretçi defteri (profil duvarı)
+export const wallPosts = sqliteTable("wall_posts", {
+  id: text("id").primaryKey(),
+  profileUserId: text("profile_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  authorId: text("author_id").references(() => users.id, { onDelete: "set null" }),
+  content: text("content").notNull(),
+  isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Başarımlar
+export const achievements = sqliteTable("achievements", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  name: text("name").notNull(),
+  icon: text("icon").notNull(),
+  description: text("description").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+export const userAchievements = sqliteTable("user_achievements", {
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  achievementId: text("achievement_id").notNull().references(() => achievements.id, { onDelete: "cascade" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 

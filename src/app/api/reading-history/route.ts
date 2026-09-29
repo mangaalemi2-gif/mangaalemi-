@@ -46,6 +46,8 @@ export async function POST(request: NextRequest) {
       if (isNewChapter) {
         try {
           await bumpActivity(db, session.userId, { chapters: 1, pages: pageNumber || 1 });
+          const { checkAchievements } = await import("@/lib/achievements");
+          await checkAchievements(db, session.userId);
         } catch { /* yoksay */ }
       }
     } else {

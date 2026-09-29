@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
         role: me.role,
         avatarUrl: me.avatarUrl,
         coverUrl: (me as any).coverUrl ?? null,
+        accent: (me as any).accent ?? null,
         bio: (me as any).bio ?? null,
         badge: me.badge,
         createdAt: me.createdAt,
@@ -80,7 +81,7 @@ export async function PATCH(req: NextRequest) {
     const db = getDb();
 
     const body = (await req.json()) as any;
-    const { bio, avatarUrl, coverUrl, username, currentPassword, newPassword } = body;
+    const { bio, avatarUrl, coverUrl, accent, username, currentPassword, newPassword } = body;
 
     const [me] = await db.select().from(users).where(eq(users.id, session.userId));
     if (!me) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
@@ -100,6 +101,10 @@ export async function PATCH(req: NextRequest) {
       if (coverUrl && coverUrl.length > 500) return NextResponse.json({ error: "Kapak URL çok uzun." }, { status: 400 });
       if (coverUrl && !/^https?:\/\/.+/.test(coverUrl) && !coverUrl.startsWith("/api/uploads/")) return NextResponse.json({ error: "Kapak geçerli bir URL olmalı (https://...)." }, { status: 400 });
       update.coverUrl = coverUrl?.trim() || null;
+    }
+    if (accent !== undefined) {
+      if (accent && !/^#[0-9a-fA-F]{6}$/.test(accent)) return NextResponse.json({ error: "Geçersiz renk." }, { status: 400 });
+      update.accent = accent || null;
     }
     if (username !== undefined && username !== me.username) {
       const clean = username.trim();

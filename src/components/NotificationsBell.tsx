@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Bell, CheckCheck, Reply, UserPlus, Megaphone, AtSign } from "lucide-react";
+import { Bell, CheckCheck, Reply, UserPlus, Megaphone, AtSign, Award, Flame } from "lucide-react";
 
 interface Notif {
   id: string;
@@ -19,6 +19,7 @@ const ICONS: Record<string, any> = {
   follow: UserPlus,
   announcement: Megaphone,
   mention: AtSign,
+  achievement: Award,
 };
 
 export default function NotificationsBell() {
@@ -107,7 +108,7 @@ export default function NotificationsBell() {
               <p className="text-center text-gray-500 text-xs py-8">Bildirimin yok. Biri yorumuna yanıt yazınca veya seni takip edince burada görürsün.</p>
             ) : (
               notifs.map((n) => {
-                const Icon = ICONS[n.type] || Bell;
+                const Icon = n.type.startsWith("streak") ? Flame : ICONS[n.type] || Bell;
                 const inner = (
                   <div
                     onClick={() => openNotif(n)}
