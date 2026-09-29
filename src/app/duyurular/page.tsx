@@ -7,6 +7,7 @@ interface Ann {
   id: string;
   title: string;
   message: string;
+  isPinned: boolean | null;
   createdAt: any;
   username: string | null;
 }
@@ -51,8 +52,11 @@ export default function DuyurularPage() {
       ) : (
         <div className="space-y-3">
           {items.map((a) => (
-            <div key={a.id} className="glass-panel rounded-2xl p-5 border border-white/10">
-              <h3 className="font-bold text-white">{a.title}</h3>
+            <div key={a.id} className={`glass-panel rounded-2xl p-5 border ${a.isPinned ? "border-yellow-500/25" : "border-white/10"}`}>
+              <h3 className="font-bold text-white flex items-center gap-2">
+                {a.isPinned && <span className="text-[10px] px-2 py-0.5 rounded-full bg-yellow-500/15 border border-yellow-500/30 text-yellow-400 font-bold">SABİTLİ</span>}
+                {a.title}
+              </h3>
               <p className="text-sm text-gray-300 mt-1 leading-relaxed">{a.message}</p>
               <p className="text-[11px] text-gray-600 mt-2">
                 {a.username ? `@${a.username}` : ""} • {a.createdAt ? new Date(typeof a.createdAt === "number" ? a.createdAt * 1000 : a.createdAt).toLocaleDateString("tr-TR") : ""}

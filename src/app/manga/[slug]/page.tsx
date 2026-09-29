@@ -5,6 +5,8 @@ import { getManga, mangaCover } from "@/data/mangas";
 import CommentSection from "@/components/CommentSection";
 import FavoriteButton from "@/components/FavoriteButton";
 import RatingWidget from "@/components/RatingWidget";
+import SeriesFollowButton from "@/components/SeriesFollowButton";
+import Recommendations from "@/components/Recommendations";
 
 // Manifest'ten bölüm listesi çıkar
 function getChapters(slug: string) {
@@ -94,7 +96,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
             <RatingWidget mangaSlug={slug} />
           </div>
 
-          <div className="flex items-center gap-4 mt-auto">
+          <div className="flex items-center gap-4 mt-auto flex-wrap">
             <Link
               href={`/manga/${slug}/1`}
               className="px-8 py-3 rounded-full bg-primary text-black font-bold flex items-center gap-2 hover:scale-105 transition-transform shadow-[0_0_20px_rgba(57,255,20,0.3)]"
@@ -102,6 +104,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
               <BookOpen className="w-5 h-5" /> İlk Bölümü Oku
             </Link>
             <FavoriteButton mangaSlug={slug} />
+            <SeriesFollowButton mangaSlug={slug} />
           </div>
         </div>
       </div>
@@ -143,6 +146,9 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
 
       {/* Manga Yorumları */}
       <CommentSection type="manga" slug={slug} />
+
+      {/* Öneriler */}
+      <Recommendations mangaSlug={slug} />
     </div>
   );
 }

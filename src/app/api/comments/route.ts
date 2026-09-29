@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { comments, commentLikes, users, notifications } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { maskProfanity } from "@/lib/profanity";
+import { getActiveBan, banMessage } from "@/lib/moderation";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
           id: comments.id,
           content: comments.content,
           isSpoiler: comments.isSpoiler,
+          isEdited: comments.isEdited,
           parentId: comments.parentId,
           context: comments.context,
           slug: comments.slug,
@@ -59,6 +61,7 @@ export async function GET(req: NextRequest) {
           id: comments.id,
           content: comments.content,
           isSpoiler: comments.isSpoiler,
+          isEdited: comments.isEdited,
           parentId: comments.parentId,
           context: comments.context,
           slug: comments.slug,
@@ -89,6 +92,7 @@ export async function GET(req: NextRequest) {
         id: comments.id,
         content: comments.content,
         isSpoiler: comments.isSpoiler,
+        isEdited: comments.isEdited,
         parentId: comments.parentId,
         createdAt: comments.createdAt,
         userId: comments.userId,
@@ -112,6 +116,7 @@ export async function GET(req: NextRequest) {
             id: comments.id,
             content: comments.content,
             isSpoiler: comments.isSpoiler,
+            isEdited: comments.isEdited,
             parentId: comments.parentId,
             createdAt: comments.createdAt,
             userId: comments.userId,
@@ -142,6 +147,11 @@ export async function POST(req: NextRequest) {
     if (!session) return NextResponse.json({ error: "Giriş yapmalısın." }, { status: 401 });
 
     const db = getDb();
+
+    // Ban kontrolü
+    const ban = await getActiveBan(db, session.userId);
+    if (ban) return NextResponse.json({ error: banMessage(ban) }, { status: 403 });
+
     const body = await req.json() as any;
     const { content, context, slug, chapter, parentId, isSpoiler } = body;
 
@@ -189,6 +199,7 @@ export async function POST(req: NextRequest) {
         id: comments.id,
         content: comments.content,
         isSpoiler: comments.isSpoiler,
+        isEdited: comments.isEdited,
         parentId: comments.parentId,
         createdAt: comments.createdAt,
         userId: comments.userId,
@@ -203,6 +214,31 @@ export async function POST(req: NextRequest) {
       .where(eq(comments.id, id));
 
     return NextResponse.json({ comment: { ...newComment, replies: [] } });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+// PATCH: Yorumu düzenle (sadece sahibi)
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getSession(req);
+    if (!session) return NextResponse.json({ error: "Giriş yapmalısın." }, { status: 401 });
+    const db = getDb();
+
+    const ban = await getActiveBan(db, session.userId);
+    if (ban) return NextResponse.json({ error: banMessage(ban) }, { status: 403 });
+
+    const { id, content } = (await req.json()) as any;
+    if (!id || !content?.trim()) return NextResponse.json({ error: "Yorum boş olamaz." }, { status: 400 });
+    if (content.trim().length > 2000) return NextResponse.json({ error: "Yorum en fazla 2000 karakter." }, { status: 400 });
+
+    const [comment] = await db.select().from(comments).where(eq(comments.id, id));
+    if (!comment) return NextResponse.json({ error: "Yorum bulunamadı." }, { status: 404 });
+    if (comment.userId !== session.userId) return NextResponse.json({ error: "Sadece kendi yorumunu düzenleyebilirsin." }, { status: 403 });
+
+    await db.update(comments).set({ content: maskProfanity(content.trim()), isEdited: true }).where(eq(comments.id, id));
+    return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

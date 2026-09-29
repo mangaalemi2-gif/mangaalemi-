@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { polls, pollVotes } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
+import { getActiveBan, banMessage } from "@/lib/moderation";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -15,6 +16,10 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
     const { pollId, optionIndex } = (await req.json()) as any;
+
+    const ban = await getActiveBan(db, session.userId);
+    if (ban) return NextResponse.json({ error: banMessage(ban) }, { status: 403 });
+
     if (!pollId || optionIndex === undefined || optionIndex === null) {
       return NextResponse.json({ error: "pollId ve optionIndex gerekli." }, { status: 400 });
     }

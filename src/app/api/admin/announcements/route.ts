@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
-// GET: Son duyurular (herkes)
+// GET: Son duyurular (herkes) — sabitliler önce
 export async function GET(_req: NextRequest) {
   try {
     const db = getDb();
@@ -16,12 +16,13 @@ export async function GET(_req: NextRequest) {
         id: announcements.id,
         title: announcements.title,
         message: announcements.message,
+        isPinned: announcements.isPinned,
         createdAt: announcements.createdAt,
         username: users.username,
       })
       .from(announcements)
       .leftJoin(users, eq(announcements.userId, users.id))
-      .orderBy(sql`${announcements.createdAt} DESC`)
+      .orderBy(sql`${announcements.isPinned} DESC`, sql`${announcements.createdAt} DESC`)
       .limit(10);
     return NextResponse.json({ announcements: rows });
   } catch (e: any) {
@@ -65,6 +66,24 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ id });
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
+  }
+}
+
+// PATCH: Sabitle / sabiti kaldır (admin) {id, pinned}
+export async function PATCH(req: NextRequest) {
+  try {
+    const session = await getSession(req);
+    if (!session) return NextResponse.json({ error: "Giriş yapmalısın." }, { status: 401 });
+    const db = getDb();
+    const [me] = await db.select().from(users).where(eq(users.id, session.userId));
+    if (me?.role !== "admin") return NextResponse.json({ error: "Yetkin yok." }, { status: 403 });
+
+    const { id, pinned } = (await req.json()) as any;
+    if (!id) return NextResponse.json({ error: "id gerekli." }, { status: 400 });
+    await db.update(announcements).set({ isPinned: !!pinned }).where(eq(announcements.id, id));
+    return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }

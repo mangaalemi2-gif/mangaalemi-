@@ -62,6 +62,7 @@ export const comments = sqliteTable("comments", {
   parentId: text("parent_id"), // yanıt ise parent yorumun id'si
   content: text("content").notNull(),
   isSpoiler: integer("is_spoiler", { mode: "boolean" }).default(false),
+  isEdited: integer("is_edited", { mode: "boolean" }).default(false),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
   isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
@@ -162,6 +163,34 @@ export const announcements = sqliteTable("announcements", {
   userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   message: text("message").notNull(),
+  isPinned: integer("is_pinned", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Yorum tepkileri (emoji)
+export const commentReactions = sqliteTable("comment_reactions", {
+  id: text("id").primaryKey(),
+  commentId: text("comment_id").notNull().references(() => comments.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  emoji: text("emoji").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Seri takibi (yeni bölüm bildirimleri için)
+export const seriesFollows = sqliteTable("series_follows", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mangaSlug: text("manga_slug").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Uzaklaştırmalar (ban)
+export const bans = sqliteTable("bans", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reason: text("reason").notNull(),
+  expiresAt: integer("expires_at"),
+  createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 

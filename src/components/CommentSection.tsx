@@ -2,13 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { MessageSquare, ThumbsUp, Send, ChevronDown, ChevronUp, Lightbulb, MessagesSquare, Trash2, Flag, Reply, CornerDownRight, EyeOff, Eye } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, ChevronDown, ChevronUp, Lightbulb, MessagesSquare, Trash2, Flag, Reply, CornerDownRight, EyeOff, Eye, Pencil } from "lucide-react";
 import ReportModal from "./ReportModal";
+
+const EMOJIS = ["🔥", "😂", "😮", "❤️", "😢", "👏"];
 
 interface ReplyItem {
   id: string;
   content: string;
   isSpoiler: boolean | null;
+  isEdited: boolean | null;
   parentId: string | null;
   createdAt: any;
   userId: string;
@@ -23,6 +26,7 @@ interface CommentItem {
   id: string;
   content: string;
   isSpoiler: boolean | null;
+  isEdited: boolean | null;
   parentId: string | null;
   createdAt: any;
   userId: string;
@@ -75,6 +79,10 @@ export default function CommentSection({ type, slug, chapter }: Props) {
   const [replyText, setReplyText] = useState("");
   const [replySpoiler, setReplySpoiler] = useState(false);
   const [revealed, setRevealed] = useState<string[]>([]);
+  const [reactionCounts, setReactionCounts] = useState<Record<string, Record<string, number>>>({});
+  const [myReactions, setMyReactions] = useState<Record<string, string[]>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
   const [collapsed, setCollapsed] = useState(false);
   const [sending, setSending] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ type: "comment" | "user"; id: string; label?: string } | null>(null);
@@ -92,7 +100,24 @@ export default function CommentSection({ type, slug, chapter }: Props) {
       ]);
       if (cRes.ok) {
         const data = (await cRes.json()) as any;
-        setComments(data.comments || []);
+        const list = data.comments || [];
+        setComments(list);
+        // Tepkileri çek
+        try {
+          const ids: string[] = [];
+          list.forEach((c: CommentItem) => {
+            ids.push(c.id);
+            (c.replies || []).forEach((r: ReplyItem) => ids.push(r.id));
+          });
+          if (ids.length > 0) {
+            const rRes = await fetch(`/api/comments/reactions?ids=${encodeURIComponent(ids.join(","))}`);
+            if (rRes.ok) {
+              const rData = (await rRes.json()) as any;
+              setReactionCounts(rData.counts || {});
+              setMyReactions(rData.mine || {});
+            }
+          }
+        } catch { /* yoksay */ }
       }
       if (likeRes.ok) {
         const data = (await likeRes.json()) as any;
@@ -210,6 +235,62 @@ export default function CommentSection({ type, slug, chapter }: Props) {
     } catch { /* yoksay */ }
   }
 
+  async function handleReact(commentId: string, emoji: string) {
+    if (!loggedIn) {
+      window.location.href = "/login";
+      return;
+    }
+    const mine = myReactions[commentId] || [];
+    const has = mine.includes(emoji);
+    setMyReactions((prev) => ({
+      ...prev,
+      [commentId]: has ? mine.filter((e) => e !== emoji) : [...mine, emoji],
+    }));
+    setReactionCounts((prev) => ({
+      ...prev,
+      [commentId]: {
+        ...(prev[commentId] || {}),
+        [emoji]: Math.max(0, ((prev[commentId] || {})[emoji] || 0) + (has ? -1 : 1)),
+      },
+    }));
+    try {
+      await fetch("/api/comments/reactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ commentId, emoji }),
+      });
+    } catch { /* yoksay */ }
+  }
+
+  async function handleEditSave(commentId: string, isReplyParent?: string) {
+    if (!editText.trim() || sending) return;
+    setSending(true);
+    try {
+      const res = await fetch("/api/comments", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: commentId, content: editText.trim() }),
+      });
+      const data = (await res.json()) as any;
+      if (!res.ok) {
+        alert(data.error || "Düzenlenemedi.");
+        return;
+      }
+      const update = (c: CommentItem | ReplyItem) =>
+        c.id === commentId ? { ...c, content: editText.trim(), isEdited: true } : c;
+      setComments((prev) =>
+        prev.map((c) => {
+          if (c.id === commentId) return update(c) as CommentItem;
+          return { ...c, replies: (c.replies || []).map((r) => update(r) as ReplyItem) };
+        })
+      );
+      setEditingId(null);
+      setEditText("");
+    } finally {
+      setSending(false);
+    }
+  }
+
   const titles = {
     chapter: { icon: <MessageSquare className="w-5 h-5 text-primary" />, label: "Bölüm Yorumları" },
     manga: { icon: <MessageSquare className="w-5 h-5 text-accent" />, label: "Manga Hakkında Yorumlar" },
@@ -248,8 +329,35 @@ export default function CommentSection({ type, slug, chapter }: Props) {
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 font-bold">SPOILER</span>
             )}
             <span className="text-gray-600 text-xs">{timeAgo(c.createdAt)}</span>
+            {c.isEdited ? <span className="text-gray-700 text-[11px] italic">(düzenlendi)</span> : null}
           </div>
-          {hidden ? (
+          {editingId === c.id ? (
+            <div className="space-y-2">
+              <textarea
+                autoFocus
+                value={editText}
+                onChange={(e) => setEditText(e.target.value)}
+                rows={2}
+                maxLength={2000}
+                className="w-full bg-surface border border-primary/30 rounded-xl px-3 py-2 text-sm text-white focus:outline-none resize-none"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEditSave(c.id)}
+                  disabled={!editText.trim() || sending}
+                  className="px-4 py-1.5 rounded-lg bg-primary text-black text-xs font-bold hover:scale-105 transition-transform disabled:opacity-50"
+                >
+                  Kaydet
+                </button>
+                <button
+                  onClick={() => { setEditingId(null); setEditText(""); }}
+                  className="px-4 py-1.5 rounded-lg bg-surface-light border border-white/10 text-gray-300 text-xs"
+                >
+                  Vazgeç
+                </button>
+              </div>
+            </div>
+          ) : hidden ? (
             <button
               onClick={() => setRevealed((prev) => [...prev, c.id])}
               className="flex items-center gap-2 text-xs text-yellow-400/80 hover:text-yellow-400 bg-yellow-500/5 border border-yellow-500/20 rounded-xl px-3 py-2 transition-colors"
@@ -292,6 +400,15 @@ export default function CommentSection({ type, slug, chapter }: Props) {
             >
               <Flag className="w-3.5 h-3.5" />
             </button>
+            {myUserId === c.userId && (
+              <button
+                onClick={() => { setEditingId(c.id); setEditText(c.content); }}
+                className="flex items-center gap-1 text-xs text-gray-700 hover:text-primary transition-colors"
+                title="Yorumu düzenle"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
             {canDelete && (
               <button
                 onClick={() => handleDelete(c.id)}
@@ -302,6 +419,28 @@ export default function CommentSection({ type, slug, chapter }: Props) {
               </button>
             )}
           </div>
+          {(Object.keys(reactionCounts[c.id] || {}).length > 0 || loggedIn) && (
+            <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+              {EMOJIS.map((e) => {
+                const n = (reactionCounts[c.id] || {})[e] || 0;
+                const mine = (myReactions[c.id] || []).includes(e);
+                if (n === 0 && !loggedIn) return null;
+                return (
+                  <button
+                    key={e}
+                    onClick={() => handleReact(c.id, e)}
+                    title="Tepki ver"
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs transition-all hover:scale-110 ${
+                      mine ? "border-primary/60 bg-primary/15" : "border-white/10 bg-white/5 hover:border-white/25"
+                    }`}
+                  >
+                    <span>{e}</span>
+                    {n > 0 && <span className={mine ? "text-primary font-bold" : "text-gray-400"}>{n}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {!isReply && replyTo === c.id && (
             <div className="mt-3 space-y-2">
               <div className="flex gap-2">

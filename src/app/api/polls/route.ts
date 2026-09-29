@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { polls, pollVotes, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { maskProfanity } from "@/lib/profanity";
+import { getActiveBan, banMessage } from "@/lib/moderation";
 import { eq, and, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -66,6 +67,9 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
     const { question, options, endsAt } = await req.json() as any;
+
+    const ban = await getActiveBan(db, session.userId);
+    if (ban) return NextResponse.json({ error: banMessage(ban) }, { status: 403 });
 
     if (!question?.trim()) return NextResponse.json({ error: "Soru gerekli." }, { status: 400 });
     if (question.trim().length > 300) return NextResponse.json({ error: "Soru en fazla 300 karakter olabilir." }, { status: 400 });

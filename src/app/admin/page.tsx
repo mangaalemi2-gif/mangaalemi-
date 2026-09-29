@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye, MessageSquare, LifeBuoy, Flag, Trash2, Megaphone, Send } from "lucide-react";
+import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye, MessageSquare, LifeBuoy, Flag, Trash2, Megaphone, Send, Ban, Pin, PinOff, BellPlus } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
@@ -27,6 +27,11 @@ export default function AdminPage() {
   const [annTitle, setAnnTitle] = useState("");
   const [annMsg, setAnnMsg] = useState("");
   const [annSending, setAnnSending] = useState(false);
+  const [bans, setBans] = useState<any[]>([]);
+  const [ncSlug, setNcSlug] = useState("");
+  const [ncChapter, setNcChapter] = useState("");
+  const [ncSending, setNcSending] = useState(false);
+  const [ncResult, setNcResult] = useState("");
   const [tabLoading, setTabLoading] = useState(false);
   const router = useRouter();
 
@@ -62,10 +67,14 @@ export default function AdminPage() {
     setTabLoading(true);
     try {
       if (tab === "users") {
-        const res = await fetch("/api/admin/users");
-        if (res.ok) {
-          const d = (await res.json()) as any;
+        const [uRes, bRes] = await Promise.all([fetch("/api/admin/users"), fetch("/api/admin/bans")]);
+        if (uRes.ok) {
+          const d = (await uRes.json()) as any;
           setUsers(d.users || []);
+        }
+        if (bRes.ok) {
+          const d = (await bRes.json()) as any;
+          setBans(d.bans || []);
         }
       } else if (tab === "comments") {
         const res = await fetch("/api/comments?all=1");
@@ -144,6 +153,58 @@ export default function AdminPage() {
     const res = await fetch(`/api/admin/users?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (res.ok) setUsers((prev) => prev.filter((u) => u.id !== id));
     else alert("Silinemedi (kendini silemezsin).");
+  }
+
+  async function banUser(userId: string, username: string) {
+    const reason = prompt(`${username} neden banlanıyor?`);
+    if (!reason?.trim()) return;
+    const daysStr = prompt("Kaç gün? (boş bırak = süresiz)", "7");
+    const days = daysStr?.trim() ? parseInt(daysStr) : null;
+    const res = await fetch("/api/admin/bans", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, reason: reason.trim(), days: days && !isNaN(days) ? days : null }),
+    });
+    if (res.ok) loadTab("users");
+    else alert("Banlanamadı.");
+  }
+
+  async function unban(id: string) {
+    await fetch(`/api/admin/bans?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    setBans((prev) => prev.filter((b) => b.id !== id));
+  }
+
+  async function togglePin(id: string, pinned: boolean) {
+    await fetch("/api/admin/announcements", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, pinned: !pinned }),
+    });
+    setAnnouncements((prev) => prev.map((a) => (a.id === id ? { ...a, isPinned: !pinned } : a)));
+  }
+
+  async function sendNewChapter(e: React.FormEvent) {
+    e.preventDefault();
+    setNcResult("");
+    if (!ncSlug.trim() || !ncChapter.trim() || ncSending) return;
+    setNcSending(true);
+    try {
+      const res = await fetch("/api/admin/new-chapter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mangaSlug: ncSlug.trim(), chapter: ncChapter.trim() }),
+      });
+      const data = (await res.json()) as any;
+      if (res.ok) {
+        setNcResult(`✓ Duyuruldu, ${data.notified} takipçiye bildirim gitti.`);
+        setNcSlug("");
+        setNcChapter("");
+      } else {
+        setNcResult(data.error || "Gönderilemedi.");
+      }
+    } finally {
+      setNcSending(false);
+    }
   }
 
   async function deleteComment(id: string) {
@@ -305,8 +366,9 @@ export default function AdminPage() {
       )}
 
       {activeTab === "users" && (
-        <div className="glass-panel rounded-2xl p-6 border border-white/10">
-          <h3 className="font-bold text-white mb-4">Kayıtlı Kullanıcılar ({users.length})</h3>
+        <div className="space-y-4">
+          <div className="glass-panel rounded-2xl p-6 border border-white/10">
+            <h3 className="font-bold text-white mb-4">Kayıtlı Kullanıcılar ({users.length})</h3>
           {tabLoading ? <p className="text-gray-500 text-sm animate-pulse">Yükleniyor...</p> : users.length === 0 ? <p className="text-gray-500 text-sm">Kullanıcı bulunamadı.</p> : (
             <div className="space-y-2">
               {users.map((u: any) => (
@@ -326,6 +388,9 @@ export default function AdminPage() {
                       <option value="editor">editor</option>
                       <option value="admin">admin</option>
                     </select>
+                    <button onClick={() => banUser(u.id, u.username)} className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20" title="Uzaklaştır (ban)">
+                      <Ban className="w-4 h-4" />
+                    </button>
                     <button onClick={() => deleteUser(u.id)} className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20" title="Sil">
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -334,6 +399,29 @@ export default function AdminPage() {
               ))}
             </div>
           )}
+        </div>
+          <div className="glass-panel rounded-2xl p-6 border border-yellow-500/15">
+            <h3 className="font-bold text-white mb-4">Aktif Uzaklaştırmalar ({bans.length})</h3>
+            {bans.length === 0 ? (
+              <p className="text-gray-500 text-sm">Banlı kullanıcı yok.</p>
+            ) : (
+              <div className="space-y-2">
+                {bans.map((b: any) => (
+                  <div key={b.id} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-surface-light/40 border border-white/5 flex-wrap">
+                    <div>
+                      <p className="text-sm text-white font-medium">@{b.username || "?"} <span className="text-xs text-gray-500">— {b.reason}</span></p>
+                      <p className="text-[11px] text-gray-500">
+                        {b.expiresAt ? `Bitiş: ${new Date(typeof b.expiresAt === "number" ? b.expiresAt * 1000 : b.expiresAt).toLocaleDateString("tr-TR")}` : "Süresiz"}
+                      </p>
+                    </div>
+                    <button onClick={() => unban(b.id)} className="px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/25 text-primary text-xs font-bold hover:bg-primary/20">
+                      Kaldır
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -424,6 +512,27 @@ export default function AdminPage() {
 
       {activeTab === "announcements" && (
         <div className="space-y-4">
+          <form onSubmit={sendNewChapter} className="glass-panel rounded-2xl p-6 border border-accent/20 space-y-3">
+            <h3 className="font-bold text-white flex items-center gap-2"><BellPlus className="w-5 h-5 text-accent" /> Yeni Bölüm Duyur (seri takipçilerine bildirim gider)</h3>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <input
+                value={ncSlug}
+                onChange={(e) => setNcSlug(e.target.value)}
+                placeholder="Manga slug — örn: dragon-ball-1984"
+                className="bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-accent/50"
+              />
+              <input
+                value={ncChapter}
+                onChange={(e) => setNcChapter(e.target.value)}
+                placeholder="Bölüm no — örn: 42"
+                className="bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-accent/50"
+              />
+            </div>
+            {ncResult && <p className="text-xs text-primary">{ncResult}</p>}
+            <button type="submit" disabled={ncSending} className="px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform disabled:opacity-50">
+              {ncSending ? "Gönderiliyor..." : "Duyur + Bildirim Gönder"}
+            </button>
+          </form>
           <form onSubmit={sendAnnouncement} className="glass-panel rounded-2xl p-6 border border-white/10 space-y-3">
             <h3 className="font-bold text-white">Duyuru Yayınla (tüm üyelere bildirim gider)</h3>
             <input
@@ -452,9 +561,17 @@ export default function AdminPage() {
             ) : (
               <div className="space-y-2">
                 {announcements.map((a: any) => (
-                  <div key={a.id} className="p-3 rounded-xl bg-surface-light/40 border border-white/5">
-                    <p className="text-sm text-white font-medium">{a.title}</p>
-                    <p className="text-sm text-gray-400 mt-1">{a.message}</p>
+                  <div key={a.id} className="flex items-start justify-between gap-2 p-3 rounded-xl bg-surface-light/40 border border-white/5">
+                    <div>
+                      <p className="text-sm text-white font-medium flex items-center gap-2">
+                        {a.isPinned && <Pin className="w-3.5 h-3.5 text-yellow-400" />}
+                        {a.title}
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">{a.message}</p>
+                    </div>
+                    <button onClick={() => togglePin(a.id, !!a.isPinned)} className="p-2 rounded-lg bg-surface border border-white/10 text-gray-400 hover:text-yellow-400 transition-colors flex-shrink-0" title={a.isPinned ? "Sabiti kaldır" : "Sabitle"}>
+                      {a.isPinned ? <PinOff className="w-4 h-4" /> : <Pin className="w-4 h-4" />}
+                    </button>
                   </div>
                 ))}
               </div>

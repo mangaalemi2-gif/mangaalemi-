@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp, Heart, Trophy } from "lucide-react";
+import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
   id: string;
@@ -42,7 +43,7 @@ interface MyComment {
   likeCount: number;
 }
 
-type Tab = "overview" | "history" | "favorites" | "comments" | "settings";
+type Tab = "overview" | "history" | "favorites" | "comments" | "stats" | "settings";
 
 interface LevelInfo {
   level: number;
@@ -59,6 +60,7 @@ export default function ProfilePage() {
   const [myComments, setMyComments] = useState<MyComment[]>([]);
   const [myTickets, setMyTickets] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
+  const [seriesFollows, setSeriesFollows] = useState<any[]>([]);
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState<LevelInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,13 +79,14 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes] = await Promise.all([
+        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/reading-history"),
           fetch("/api/comments?mine=1"),
           fetch("/api/support"),
           fetch("/api/favorites"),
+          fetch("/api/series-follow"),
         ]);
 
         if (!meRes.ok) {
@@ -127,6 +130,10 @@ export default function ProfilePage() {
         if (favRes.ok) {
           const f = (await favRes.json()) as any;
           setFavorites(f.favorites || []);
+        }
+        if (sfRes.ok) {
+          const s = (await sfRes.json()) as any;
+          setSeriesFollows(s.follows || []);
         }
       } catch {
         router.push("/login");
@@ -224,6 +231,46 @@ export default function ProfilePage() {
     return titles[slug] || slug;
   }
 
+  function chapterPages(slug: string, ch: number): number {
+    const arr = (mangaManifest as Record<string, string[]>)[`${slug}/Chapter${ch}`];
+    return arr ? arr.length : 0;
+  }
+
+  function toMs(v: any): number {
+    if (!v) return 0;
+    if (typeof v === "number") return v < 1e12 ? v * 1000 : v;
+    const t = new Date(v).getTime();
+    return isNaN(t) ? 0 : t;
+  }
+
+  function readingStats() {
+    let chapters = 0;
+    let pages = 0;
+    let best = { slug: "", pages: 0 };
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      d.setHours(0, 0, 0, 0);
+      return { date: d, count: 0 };
+    });
+    for (const h of history) {
+      chapters += h.chapterNumber;
+      let p = 0;
+      for (let i = 1; i < h.chapterNumber; i++) p += chapterPages(h.mangaSlug, i);
+      p += Math.min(h.pageNumber, chapterPages(h.mangaSlug, h.chapterNumber) || h.pageNumber);
+      pages += p;
+      if (p > best.pages) best = { slug: h.mangaSlug, pages: p };
+      const t = toMs(h.updatedAt);
+      if (t > 0) {
+        const day = new Date(t);
+        day.setHours(0, 0, 0, 0);
+        const idx = days.findIndex((d) => d.date.getTime() === day.getTime());
+        if (idx >= 0) days[idx].count += 1;
+      }
+    }
+    return { series: history.length, chapters, pages, best, days, maxDay: Math.max(1, ...days.map((d) => d.count)) };
+  }
+
   if (loading) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
@@ -239,6 +286,7 @@ export default function ProfilePage() {
     { key: "history", label: "Okuma Geçmişi", icon: BookOpen },
     { key: "favorites", label: `Favoriler (${favorites.length})`, icon: Heart },
     { key: "comments", label: `Yorumlarım (${myComments.length})`, icon: MessageSquare },
+    { key: "stats", label: "İstatistikler", icon: BarChart3 },
     { key: "settings", label: "Profil Ayarları", icon: Settings },
   ];
 
@@ -406,24 +454,90 @@ export default function ProfilePage() {
       )}
 
       {tab === "favorites" && (
-        <div className="glass-panel rounded-3xl p-6 border border-white/10">
-          <h2 className="font-bold text-white mb-4">Favori Serilerin ({favorites.length})</h2>
-          {favorites.length === 0 ? (
-            <p className="text-gray-500 text-sm">Henüz favorin yok. Manga sayfalarındaki kalp butonuyla ekle. <Link href="/ara" className="text-primary hover:underline">Keşfet</Link></p>
-          ) : (
-            <div className="grid gap-3">
-              {favorites.map((f: any) => (
-                <div key={f.id} className="flex items-center justify-between p-4 rounded-xl bg-surface-light/50 border border-white/5">
-                  <Link href={`/manga/${f.mangaSlug}`} className="font-semibold text-white hover:text-primary transition-colors">
-                    {getMangaTitle(f.mangaSlug)}
-                  </Link>
-                  <Link href={`/manga/${f.mangaSlug}/1`} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
-                    Oku →
-                  </Link>
+        <div className="space-y-4">
+          <div className="glass-panel rounded-3xl p-6 border border-white/10">
+            <h2 className="font-bold text-white mb-4">Favori Serilerin ({favorites.length})</h2>
+            {favorites.length === 0 ? (
+              <p className="text-gray-500 text-sm">Henüz favorin yok. Manga sayfalarındaki kalp butonuyla ekle. <Link href="/ara" className="text-primary hover:underline">Keşfet</Link></p>
+            ) : (
+              <div className="grid gap-3">
+                {favorites.map((f: any) => (
+                  <div key={f.id} className="flex items-center justify-between p-4 rounded-xl bg-surface-light/50 border border-white/5">
+                    <Link href={`/manga/${f.mangaSlug}`} className="font-semibold text-white hover:text-primary transition-colors">
+                      {getMangaTitle(f.mangaSlug)}
+                    </Link>
+                    <Link href={`/manga/${f.mangaSlug}/1`} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
+                      Oku →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="glass-panel rounded-3xl p-6 border border-white/10">
+            <h2 className="font-bold text-white mb-4">Takip Edilen Seriler ({seriesFollows.length})</h2>
+            <p className="text-xs text-gray-500 mb-3">Yeni bölüm eklenince bildirim alırsın.</p>
+            {seriesFollows.length === 0 ? (
+              <p className="text-gray-500 text-sm">Henüz seri takip etmiyorsun.</p>
+            ) : (
+              <div className="grid gap-3">
+                {seriesFollows.map((f: any) => (
+                  <div key={f.id} className="flex items-center justify-between p-4 rounded-xl bg-surface-light/50 border border-white/5">
+                    <Link href={`/manga/${f.mangaSlug}`} className="font-semibold text-white hover:text-primary transition-colors">
+                      {getMangaTitle(f.mangaSlug)}
+                    </Link>
+                    <Link href={`/manga/${f.mangaSlug}/1`} className="px-3 py-1.5 rounded-full bg-accent/10 text-accent text-xs font-bold border border-accent/20">
+                      Oku →
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "stats" && (
+        <div className="glass-panel rounded-3xl p-6 border border-white/10 space-y-6">
+          <h2 className="font-bold text-white flex items-center gap-2"><BarChart3 className="w-5 h-5 text-accent" /> Okuma İstatistiklerin</h2>
+          {(() => {
+            const s = readingStats();
+            return (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Okunan Seri", value: s.series },
+                    { label: "Okunan Bölüm", value: s.chapters },
+                    { label: "Okunan Sayfa", value: s.pages.toLocaleString("tr-TR") },
+                    { label: "Yorum", value: stats?.commentCount ?? myComments.length },
+                  ].map((c) => (
+                    <div key={c.label} className="bg-surface-light/40 border border-white/5 rounded-2xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-white">{c.value}</p>
+                      <p className="text-[11px] text-gray-500 mt-1">{c.label}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+                {s.best.slug && (
+                  <p className="text-sm text-gray-400">En çok okuduğun seri: <Link href={`/manga/${s.best.slug}`} className="text-primary font-bold hover:underline">{getMangaTitle(s.best.slug)}</Link> ({s.best.pages.toLocaleString("tr-TR")} sayfa)</p>
+                )}
+                <div>
+                  <p className="text-xs text-gray-500 mb-2">Son 7 gün aktivitesi</p>
+                  <div className="flex items-end gap-2 h-24">
+                    {s.days.map((d, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div
+                          className="w-full rounded-t-lg bg-gradient-to-t from-primary/60 to-accent/60 min-h-[4px]"
+                          style={{ height: `${Math.max(4, (d.count / s.maxDay) * 80)}px` }}
+                          title={`${d.count} aktivite`}
+                        />
+                        <span className="text-[10px] text-gray-600">{d.date.toLocaleDateString("tr-TR", { weekday: "narrow" })}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
 
