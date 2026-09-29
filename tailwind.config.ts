@@ -9,12 +9,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#000000", // OLED Black
-        foreground: "#ffffff",
+        background: "rgb(var(--c-bg) / <alpha-value>)",
+        foreground: "rgb(var(--c-fg) / <alpha-value>)",
         primary: "#39FF14", // Neon Green
         accent: "#9D00FF", // Neon Purple
-        surface: "#121212",
-        "surface-light": "#1E1E1E",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        "surface-light": "rgb(var(--c-slight) / <alpha-value>)",
       },
     },
   },

@@ -92,7 +92,7 @@ export default function AraPage() {
             <Link key={m.slug} href={`/manga/${m.slug}`}>
               <div className="group relative rounded-xl overflow-hidden bg-surface-light aspect-[2/3] cursor-pointer hover:shadow-[0_0_20px_rgba(157,0,255,0.3)] transition-shadow">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-                <div className="absolute bottom-0 left-0 p-4 z-20 w-full">
+                <div className="absolute bottom-0 left-0 p-4 z-20 w-full keep-white">
                   <div className="flex flex-wrap gap-1 mb-2">
                     {m.genres.slice(0, 2).map((g) => (
                       <span key={g} className="px-2 py-0.5 bg-accent/80 text-white text-[10px] font-bold rounded">{g}</span>

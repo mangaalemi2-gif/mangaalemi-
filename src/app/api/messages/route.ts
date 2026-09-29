@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { conversations, messages, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { maskProfanity } from "@/lib/profanity";
+import { floodWait } from "@/lib/moderation";
 import { eq, and, or, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -111,6 +112,9 @@ export async function POST(req: NextRequest) {
 
     const [target] = await db.select().from(users).where(eq(users.id, toUserId));
     if (!target) return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
+
+    const wait = await floodWait(db, messages, messages.senderId, messages.createdAt, session.userId, 5);
+    if (wait > 0) return NextResponse.json({ error: `Çok hızlı gönderiyorsun. ${wait} sn bekle.` }, { status: 429 });
 
     const [a, b] = pair(session.userId, toUserId);
     let [conv] = await db

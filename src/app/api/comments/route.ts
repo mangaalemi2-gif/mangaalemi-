@@ -3,7 +3,7 @@ import { getDb } from "@/lib/db";
 import { comments, commentLikes, users, notifications } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { maskProfanity } from "@/lib/profanity";
-import { getActiveBan, banMessage } from "@/lib/moderation";
+import { getActiveBan, banMessage, floodWait } from "@/lib/moderation";
 import { bumpActivity } from "@/lib/streaks";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
           content: comments.content,
           isSpoiler: comments.isSpoiler,
           isEdited: comments.isEdited,
+          imageUrl: comments.imageUrl,
           parentId: comments.parentId,
           context: comments.context,
           slug: comments.slug,
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest) {
           content: comments.content,
           isSpoiler: comments.isSpoiler,
           isEdited: comments.isEdited,
+          imageUrl: comments.imageUrl,
           parentId: comments.parentId,
           context: comments.context,
           slug: comments.slug,
@@ -94,6 +96,7 @@ export async function GET(req: NextRequest) {
         content: comments.content,
         isSpoiler: comments.isSpoiler,
         isEdited: comments.isEdited,
+        imageUrl: comments.imageUrl,
         parentId: comments.parentId,
         createdAt: comments.createdAt,
         userId: comments.userId,
@@ -118,6 +121,7 @@ export async function GET(req: NextRequest) {
             content: comments.content,
             isSpoiler: comments.isSpoiler,
             isEdited: comments.isEdited,
+            imageUrl: comments.imageUrl,
             parentId: comments.parentId,
             createdAt: comments.createdAt,
             userId: comments.userId,
@@ -153,16 +157,23 @@ export async function POST(req: NextRequest) {
     const ban = await getActiveBan(db, session.userId);
     if (ban) return NextResponse.json({ error: banMessage(ban) }, { status: 403 });
 
-    const body = await req.json() as any;
-    const { content, context, slug, chapter, parentId, isSpoiler } = body;
+    // Flood koruması (30 sn)
+    const wait = await floodWait(db, comments, comments.userId, comments.createdAt, session.userId, 30);
+    if (wait > 0) return NextResponse.json({ error: `Çok hızlı yazıyorsun. ${wait} sn bekle.` }, { status: 429 });
 
-    if (!content?.trim()) return NextResponse.json({ error: "Yorum boş olamaz." }, { status: 400 });
-    if (content.trim().length > 2000) return NextResponse.json({ error: "Yorum en fazla 2000 karakter olabilir." }, { status: 400 });
+    const body = await req.json() as any;
+    const { content, context, slug, chapter, parentId, isSpoiler, imageUrl } = body;
+
+    if (!content?.trim() && !imageUrl) return NextResponse.json({ error: "Yorum boş olamaz." }, { status: 400 });
+    if (content?.trim() && content.trim().length > 2000) return NextResponse.json({ error: "Yorum en fazla 2000 karakter olabilir." }, { status: 400 });
     if (!context) return NextResponse.json({ error: "Context gerekli." }, { status: 400 });
     if (!["chapter", "manga", "chat", "feedback"].includes(context)) return NextResponse.json({ error: "Geçersiz context." }, { status: 400 });
+    if (imageUrl && !String(imageUrl).startsWith("/api/uploads/comments/")) {
+      return NextResponse.json({ error: "Geçersiz resim." }, { status: 400 });
+    }
 
     // Küfür filtresi
-    const cleanContent = maskProfanity(content.trim());
+    const cleanContent = maskProfanity((content || "").trim());
 
     const id = randomUUID();
     await db.insert(comments).values({
@@ -174,6 +185,7 @@ export async function POST(req: NextRequest) {
       parentId: parentId || null,
       content: cleanContent,
       isSpoiler: !!isSpoiler,
+      imageUrl: imageUrl || null,
     });
 
     // Yanıtsa, ana yorumun sahibine bildirim gönder
@@ -224,6 +236,7 @@ export async function POST(req: NextRequest) {
         content: comments.content,
         isSpoiler: comments.isSpoiler,
         isEdited: comments.isEdited,
+        imageUrl: comments.imageUrl,
         parentId: comments.parentId,
         createdAt: comments.createdAt,
         userId: comments.userId,

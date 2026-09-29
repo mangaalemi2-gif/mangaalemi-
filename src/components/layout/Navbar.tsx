@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy, Compass, Trophy, Mail, BookPlus } from "lucide-react";
 import { useState, useEffect } from "react";
 import NotificationsBell from "@/components/NotificationsBell";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface UserData {
   id: string;
@@ -43,7 +44,7 @@ function MessagesIcon() {
     <Link href="/mesajlar" className="relative p-2 rounded-full text-gray-300 hover:text-white hover:bg-surface-light transition-all" title="Mesajlar">
       <Mail className="w-5 h-5" />
       {unread > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center">
+        <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center keep-white">
           {unread > 9 ? "9+" : unread}
         </span>
       )}
@@ -117,6 +118,7 @@ export default function Navbar() {
 
           {/* Desktop User Menu */}
           <div className="hidden md:flex items-center gap-3">
+            <ThemeToggle />
             {user && <MessagesIcon />}
             {user && <NotificationsBell />}
             {user ? (
@@ -155,6 +157,7 @@ export default function Navbar() {
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-1">
+            <ThemeToggle />
             {user && <MessagesIcon />}
             {user && <NotificationsBell />}
             <button

@@ -37,7 +37,7 @@ export default function Recommendations({ mangaSlug }: { mangaSlug: string }) {
           <Link key={m.slug} href={`/manga/${m.slug}`}>
             <div className="group relative rounded-xl overflow-hidden bg-surface-light aspect-[2/3] hover:shadow-[0_0_20px_rgba(57,255,20,0.25)] transition-shadow">
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-              <div className="absolute bottom-0 left-0 p-3 z-20 w-full">
+              <div className="absolute bottom-0 left-0 p-3 z-20 w-full keep-white">
                 <h3 className="font-bold text-white text-sm line-clamp-2">{m.title}</h3>
                 <p className="text-[11px] text-gray-400">{m.author}</p>
               </div>

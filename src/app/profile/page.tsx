@@ -61,6 +61,7 @@ export default function ProfilePage() {
   const [myTickets, setMyTickets] = useState<any[]>([]);
   const [favorites, setFavorites] = useState<any[]>([]);
   const [seriesFollows, setSeriesFollows] = useState<any[]>([]);
+  const [myList, setMyList] = useState<any[]>([]);
   const [streaks, setStreaks] = useState<{ reading: { current: number; longest: number }; chat: { current: number; longest: number }; goals: any[] } | null>(null);
   const [goalInputs, setGoalInputs] = useState<Record<string, string>>({});
   const [xp, setXp] = useState(0);
@@ -76,12 +77,13 @@ export default function ProfilePage() {
   const [username, setUsername] = useState("");
   const [curPass, setCurPass] = useState("");
   const [newPass, setNewPass] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes] = await Promise.all([
+        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes, mlRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/reading-history"),
@@ -90,6 +92,7 @@ export default function ProfilePage() {
           fetch("/api/favorites"),
           fetch("/api/series-follow"),
           fetch("/api/streaks"),
+          fetch("/api/mylist"),
         ]);
 
         if (!meRes.ok) {
@@ -141,6 +144,10 @@ export default function ProfilePage() {
         if (stRes.ok) {
           const s = (await stRes.json()) as any;
           setStreaks(s);
+        }
+        if (mlRes.ok) {
+          const m = (await mlRes.json()) as any;
+          setMyList(m.list || []);
         }
       } catch {
         router.push("/login");
@@ -228,6 +235,30 @@ export default function ProfilePage() {
     if (res.ok) setMyComments((prev) => prev.filter((c) => c.id !== id));
   }
 
+  async function handleAvatarPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    setSaveErr("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("kind", "avatar");
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const data = (await res.json()) as any;
+      if (res.ok) {
+        setAvatarUrl(data.url);
+        setSaveMsg("✓ Avatar yüklendi, Kaydet'e basmayı unutma!");
+        setTimeout(() => setSaveMsg(""), 3000);
+      } else {
+        setSaveErr(data.error || "Yüklenemedi.");
+      }
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  }
+
   async function saveGoal(kind: string) {
     const target = goalInputs[kind] ?? "";
     const res = await fetch("/api/goals", {
@@ -301,6 +332,14 @@ export default function ProfilePage() {
   }
 
   if (!user) return null;
+
+  const LIST_LABEL: Record<string, string> = {
+    reading: "Okuyorum",
+    completed: "Tamamladım",
+    on_hold: "Bekletiyorum",
+    dropped: "Bıraktım",
+    planning: "Planlıyorum",
+  };
 
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: "overview", label: "Genel Bakış", icon: User },
@@ -476,6 +515,29 @@ export default function ProfilePage() {
 
       {tab === "favorites" && (
         <div className="space-y-4">
+          {myList.length > 0 && (
+            <div className="glass-panel rounded-3xl p-6 border border-accent/20">
+              <h2 className="font-bold text-white mb-4">Listem</h2>
+              <div className="space-y-4">
+                {Object.keys(LIST_LABEL).map((st) => {
+                  const items = myList.filter((x: any) => x.status === st);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={st}>
+                      <p className="text-xs font-bold text-accent mb-2">{LIST_LABEL[st]} ({items.length})</p>
+                      <div className="grid gap-2">
+                        {items.map((x: any) => (
+                          <Link key={x.id} href={`/manga/${x.mangaSlug}`} className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-accent/40 text-sm text-gray-200 transition-all">
+                            {getMangaTitle(x.mangaSlug)}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div className="glass-panel rounded-3xl p-6 border border-white/10">
             <h2 className="font-bold text-white mb-4">Favori Serilerin ({favorites.length})</h2>
             {favorites.length === 0 ? (
@@ -667,8 +729,15 @@ export default function ProfilePage() {
               <textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={3} maxLength={500} placeholder="Kendini tanıt..." className="mt-1 w-full bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 resize-none" />
             </div>
             <div>
-              <label className="text-xs text-gray-400">Avatar URL (https://...)</label>
-              <input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." className="mt-1 w-full bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50" />
+              <label className="text-xs text-gray-400">Avatar (dosya yükle veya URL yapıştır)</label>
+              <div className="mt-1 flex gap-2">
+                <input value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50" />
+                <label className={`px-4 py-2.5 rounded-xl bg-surface-light border border-white/10 text-xs font-bold text-gray-200 cursor-pointer hover:border-primary/40 transition-colors flex items-center ${uploadingAvatar ? "opacity-50" : ""}`}>
+                  {uploadingAvatar ? "..." : "Yükle"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarPick} disabled={uploadingAvatar} />
+                </label>
+              </div>
+              {avatarUrl && <img src={avatarUrl} alt="Avatar önizleme" className="mt-2 w-16 h-16 rounded-full object-cover border border-white/10" />}
             </div>
             <button type="submit" disabled={saving} className="px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-bold hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50">
               <Save className="w-4 h-4" /> {saving ? "Kaydediliyor..." : "Kaydet"}

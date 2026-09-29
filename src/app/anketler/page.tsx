@@ -185,7 +185,7 @@ export default function AnketlerPage() {
                 <option value="30">30 gün</option>
               </select>
               <div className="flex-1" />
-              <button type="submit" disabled={creating} className="px-5 py-2 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform disabled:opacity-50">
+              <button type="submit" disabled={creating} className="px-5 py-2 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform disabled:opacity-50 keep-white">
                 {creating ? "Oluşturuluyor..." : "Yayınla"}
               </button>
             </div>

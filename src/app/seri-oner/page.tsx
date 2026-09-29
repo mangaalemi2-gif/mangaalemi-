@@ -128,7 +128,7 @@ export default function SeriOnerPage() {
           <button
             type="submit"
             disabled={sending}
-            className="px-6 py-3 rounded-xl bg-accent text-white font-bold text-sm hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50"
+            className="px-6 py-3 rounded-xl bg-accent text-white font-bold text-sm hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50 keep-white"
           >
             <Send className="w-4 h-4" /> {sending ? "Gönderiliyor..." : "Öneriyi Gönder"}
           </button>

@@ -7,6 +7,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import RatingWidget from "@/components/RatingWidget";
 import SeriesFollowButton from "@/components/SeriesFollowButton";
 import Recommendations from "@/components/Recommendations";
+import MyListButton from "@/components/MyListButton";
 
 // Manifest'ten bölüm listesi çıkar
 function getChapters(slug: string) {
@@ -105,6 +106,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
             </Link>
             <FavoriteButton mangaSlug={slug} />
             <SeriesFollowButton mangaSlug={slug} />
+            <MyListButton mangaSlug={slug} />
           </div>
         </div>
       </div>

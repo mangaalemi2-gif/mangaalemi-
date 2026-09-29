@@ -3,6 +3,7 @@ import { getDb } from "@/lib/db";
 import { seriesRequests, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { maskProfanity } from "@/lib/profanity";
+import { floodWait } from "@/lib/moderation";
 import { eq, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -59,6 +60,9 @@ export async function POST(req: NextRequest) {
     const db = getDb();
     const { title, author, description, link } = (await req.json()) as any;
     if (!title?.trim()) return NextResponse.json({ error: "Seri adı gerekli." }, { status: 400 });
+
+    const wait = await floodWait(db, seriesRequests, seriesRequests.userId, seriesRequests.createdAt, session.userId, 120);
+    if (wait > 0) return NextResponse.json({ error: `Çok sık öneri gönderiyorsun. ${wait} sn bekle.` }, { status: 429 });
 
     const id = randomUUID();
     await db.insert(seriesRequests).values({

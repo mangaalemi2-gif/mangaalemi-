@@ -51,7 +51,7 @@ export default function Home() {
             <Link key={manga.id} href={`/manga/${manga.id}`}>
               <div className="group relative rounded-xl overflow-hidden bg-surface-light aspect-[2/3] cursor-pointer hover:shadow-[0_0_20px_rgba(157,0,255,0.3)] transition-shadow">
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-                <div className="absolute bottom-0 left-0 p-4 z-20 w-full">
+                <div className="absolute bottom-0 left-0 p-4 z-20 w-full keep-white">
                   <span className="inline-block px-2 py-1 bg-accent/80 text-white text-xs font-bold rounded mb-2">Manga</span>
                   <h3 className="font-bold text-white line-clamp-2">{manga.title}</h3>
                   <p className="text-xs text-primary mt-1">Yıl: {manga.year}</p>

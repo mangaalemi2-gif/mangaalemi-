@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { MessageSquare, ThumbsUp, Send, ChevronDown, ChevronUp, Lightbulb, MessagesSquare, Trash2, Flag, Reply, CornerDownRight, EyeOff, Eye, Pencil } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, ChevronDown, ChevronUp, Lightbulb, MessagesSquare, Trash2, Flag, Reply, CornerDownRight, EyeOff, Eye, Pencil, ImagePlus, X } from "lucide-react";
 import ReportModal from "./ReportModal";
 
 const EMOJIS = ["🔥", "😂", "😮", "❤️", "😢", "👏"];
@@ -26,6 +26,7 @@ interface ReplyItem {
   content: string;
   isSpoiler: boolean | null;
   isEdited: boolean | null;
+  imageUrl: string | null;
   parentId: string | null;
   createdAt: any;
   userId: string;
@@ -41,6 +42,7 @@ interface CommentItem {
   content: string;
   isSpoiler: boolean | null;
   isEdited: boolean | null;
+  imageUrl: string | null;
   parentId: string | null;
   createdAt: any;
   userId: string;
@@ -97,6 +99,8 @@ export default function CommentSection({ type, slug, chapter }: Props) {
   const [myReactions, setMyReactions] = useState<Record<string, string[]>>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [sending, setSending] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ type: "comment" | "user"; id: string; label?: string } | null>(null);
@@ -158,7 +162,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!text.trim() || sending) return;
+    if ((!text.trim() && !imageUrl) || sending) return;
     if (!loggedIn) {
       window.location.href = "/login";
       return;
@@ -168,16 +172,39 @@ export default function CommentSection({ type, slug, chapter }: Props) {
       const res = await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text.trim(), context, slug: slug || null, chapter: chapter || null, isSpoiler: spoiler }),
+        body: JSON.stringify({ content: text.trim(), context, slug: slug || null, chapter: chapter || null, isSpoiler: spoiler, imageUrl }),
       });
       const data = (await res.json()) as any;
-      if (res.ok && data.comment) {
+      if (!res.ok) {
+        alert(data.error || "Gönderilemedi.");
+        return;
+      }
+      if (data.comment) {
         setComments((prev) => [data.comment, ...prev]);
         setText("");
         setSpoiler(false);
+        setImageUrl(null);
       }
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("kind", "comment");
+      const res = await fetch("/api/uploads", { method: "POST", body: form });
+      const data = (await res.json()) as any;
+      if (res.ok) setImageUrl(data.url);
+      else alert(data.error || "Yüklenemedi.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
     }
   }
 
@@ -389,6 +416,11 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                 </button>
               )}
               <p className="text-gray-300 text-sm leading-relaxed break-words">{renderContent(c.content)}</p>
+              {c.imageUrl && !hidden && (
+                <a href={c.imageUrl} target="_blank" rel="noreferrer" className="block mt-2 max-w-xs">
+                  <img src={c.imageUrl} alt="Yorum resmi" className="rounded-xl border border-white/10 max-h-64 object-cover hover:opacity-90 transition-opacity" loading="lazy" />
+                </a>
+              )}
             </>
           )}
           <div className="mt-2 flex items-center gap-3">
@@ -508,6 +540,14 @@ export default function CommentSection({ type, slug, chapter }: Props) {
         <div className="px-6 pb-6 space-y-6">
           {loggedIn ? (
             <form onSubmit={handleSubmit} className="space-y-3">
+              {imageUrl && (
+                <div className="relative inline-block">
+                  <img src={imageUrl} alt="Önizleme" className="h-20 rounded-xl border border-white/10" />
+                  <button type="button" onClick={() => setImageUrl(null)} className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center keep-white">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               <div className="flex gap-3">
                 <textarea
                   placeholder={type === "feedback" ? "Site hakkında önerin nedir?" : type === "chat" ? "Sohbete katıl... (küfür/spam yasak)" : "Düşüncelerini paylaş..."}
@@ -518,6 +558,13 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                   className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors resize-none"
                 />
                 <div className="flex flex-col gap-2">
+                  <label
+                    title="Resim ekle"
+                    className={`p-3 rounded-xl border text-xs font-bold transition-colors cursor-pointer ${uploading ? "opacity-50" : "bg-surface border-white/10 text-gray-500 hover:text-gray-300"}`}
+                  >
+                    <ImagePlus className="w-4 h-4" />
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleImagePick} disabled={uploading} />
+                  </label>
                   <button
                     type="button"
                     onClick={() => setSpoiler((v) => !v)}
@@ -528,7 +575,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                   </button>
                   <button
                     type="submit"
-                    disabled={!text.trim() || sending}
+                    disabled={(!text.trim() && !imageUrl) || sending || uploading}
                     className="px-4 py-3 rounded-xl bg-primary text-black font-bold hover:scale-105 transition-transform flex items-center gap-2 text-sm disabled:opacity-50 disabled:hover:scale-100"
                   >
                     <Send className="w-4 h-4" />

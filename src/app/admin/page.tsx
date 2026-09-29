@@ -33,6 +33,7 @@ export default function AdminPage() {
   const [ncSending, setNcSending] = useState(false);
   const [ncResult, setNcResult] = useState("");
   const [requests, setRequests] = useState<any[]>([]);
+  const [siteStats, setSiteStats] = useState<any | null>(null);
   const [tabLoading, setTabLoading] = useState(false);
   const router = useRouter();
 
@@ -67,6 +68,13 @@ export default function AdminPage() {
   async function loadTab(tab: Tab) {
     setTabLoading(true);
     try {
+      if (tab === "overview") {
+        const res = await fetch("/api/admin/stats");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setSiteStats(d);
+        }
+      }
       if (tab === "users") {
         const [uRes, bRes] = await Promise.all([fetch("/api/admin/users"), fetch("/api/admin/bans")]);
         if (uRes.ok) {
@@ -120,7 +128,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    if (user && ["users", "comments", "tickets", "reports", "polls", "announcements", "requests"].includes(activeTab)) {
+    if (user && ["overview", "users", "comments", "tickets", "reports", "polls", "announcements", "requests"].includes(activeTab)) {
       loadTab(activeTab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -319,28 +327,82 @@ export default function AdminPage() {
       </div>
 
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <div className="glass-panel rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3 mb-3">
-              <BookOpen className="w-5 h-5 text-primary" />
-              <span className="text-sm text-gray-400 font-medium">Toplam Manga</span>
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="glass-panel rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center gap-3 mb-3">
+                <BookOpen className="w-5 h-5 text-primary" />
+                <span className="text-sm text-gray-400 font-medium">Toplam Manga</span>
+              </div>
+              <p className="text-4xl font-extrabold text-white">{mangaSlugs.length}</p>
             </div>
-            <p className="text-4xl font-extrabold text-white">{mangaSlugs.length}</p>
-          </div>
-          <div className="glass-panel rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3 mb-3">
-              <Eye className="w-5 h-5 text-accent" />
-              <span className="text-sm text-gray-400 font-medium">Toplam Bölüm</span>
+            <div className="glass-panel rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center gap-3 mb-3">
+                <Eye className="w-5 h-5 text-accent" />
+                <span className="text-sm text-gray-400 font-medium">Toplam Bölüm</span>
+              </div>
+              <p className="text-4xl font-extrabold text-white">{totalChapters}</p>
             </div>
-            <p className="text-4xl font-extrabold text-white">{totalChapters}</p>
-          </div>
-          <div className="glass-panel rounded-2xl p-6 border border-white/10">
-            <div className="flex items-center gap-3 mb-3">
-              <BarChart3 className="w-5 h-5 text-yellow-400" />
-              <span className="text-sm text-gray-400 font-medium">Toplam Sayfa</span>
+            <div className="glass-panel rounded-2xl p-6 border border-white/10">
+              <div className="flex items-center gap-3 mb-3">
+                <BarChart3 className="w-5 h-5 text-yellow-400" />
+                <span className="text-sm text-gray-400 font-medium">Toplam Sayfa</span>
+              </div>
+              <p className="text-4xl font-extrabold text-white">{totalPages}</p>
             </div>
-            <p className="text-4xl font-extrabold text-white">{totalPages}</p>
           </div>
+
+          {siteStats ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: "Üye", value: siteStats.totals.users },
+                  { label: "Yorum", value: siteStats.totals.comments },
+                  { label: "Özel Mesaj", value: siteStats.totals.messages },
+                  { label: "Anket / Oy", value: `${siteStats.totals.polls} / ${siteStats.totals.votes}` },
+                  { label: "Favori", value: siteStats.totals.favorites },
+                  { label: "Puan", value: siteStats.totals.ratings },
+                  { label: "Açık Destek", value: siteStats.totals.openTickets },
+                  { label: "Bekleyen Bildirim", value: siteStats.totals.pendingReports },
+                ].map((c) => (
+                  <div key={c.label} className="glass-panel rounded-2xl p-4 border border-white/10 text-center">
+                    <p className="text-2xl font-extrabold text-white">{c.value}</p>
+                    <p className="text-[11px] text-gray-500 mt-1">{c.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { key: "users" as const, label: "Son 14 gün: yeni üyeler", color: "from-primary/70 to-primary/30" },
+                  { key: "comments" as const, label: "Son 14 gün: yorumlar", color: "from-accent/70 to-accent/30" },
+                ].map((g) => {
+                  const max = Math.max(1, ...siteStats.days.map((d: any) => d[g.key]));
+                  return (
+                    <div key={g.key} className="glass-panel rounded-2xl p-5 border border-white/10">
+                      <p className="text-xs text-gray-400 mb-3">{g.label}</p>
+                      <div className="flex items-end gap-1 h-28">
+                        {siteStats.days.map((d: any) => (
+                          <div
+                            key={d.day}
+                            className={`flex-1 rounded-t bg-gradient-to-t ${g.color} min-h-[3px]`}
+                            style={{ height: `${Math.max(3, (d[g.key] / max) * 100)}%` }}
+                            title={`${d.day}: ${d[g.key]}`}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex justify-between text-[10px] text-gray-600 mt-1">
+                        <span>{siteStats.days[0]?.day.slice(5)}</span>
+                        <span>{siteStats.days[13]?.day.slice(5)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <p className="text-gray-500 text-sm animate-pulse">İstatistikler yükleniyor...</p>
+          )}
         </div>
       )}
 
@@ -547,7 +609,7 @@ export default function AdminPage() {
               />
             </div>
             {ncResult && <p className="text-xs text-primary">{ncResult}</p>}
-            <button type="submit" disabled={ncSending} className="px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform disabled:opacity-50">
+            <button type="submit" disabled={ncSending} className="px-5 py-2.5 rounded-xl bg-accent text-white text-sm font-bold hover:scale-105 transition-transform disabled:opacity-50 keep-white">
               {ncSending ? "Gönderiliyor..." : "Duyur + Bildirim Gönder"}
             </button>
           </form>

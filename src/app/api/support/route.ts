@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { supportTickets, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
+import { floodWait } from "@/lib/moderation";
 import { eq, sql, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -63,6 +64,11 @@ export async function POST(req: NextRequest) {
     if (subject.trim().length > 200) return NextResponse.json({ error: "Konu en fazla 200 karakter." }, { status: 400 });
     if (message.trim().length > 5000) return NextResponse.json({ error: "Mesaj en fazla 5000 karakter." }, { status: 400 });
     if (!session && !email?.trim()) return NextResponse.json({ error: "E-posta gerekli (misafir olarak yazıyorsun)." }, { status: 400 });
+
+    if (session) {
+      const wait = await floodWait(db, supportTickets, supportTickets.userId, supportTickets.createdAt, session.userId, 60);
+      if (wait > 0) return NextResponse.json({ error: `Çok sık talep açıyorsun. ${wait} sn bekle.` }, { status: 429 });
+    }
 
     const id = randomUUID();
     await db.insert(supportTickets).values({

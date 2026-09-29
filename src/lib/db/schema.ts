@@ -63,6 +63,7 @@ export const comments = sqliteTable("comments", {
   content: text("content").notNull(),
   isSpoiler: integer("is_spoiler", { mode: "boolean" }).default(false),
   isEdited: integer("is_edited", { mode: "boolean" }).default(false),
+  imageUrl: text("image_url"),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
   isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
@@ -192,6 +193,16 @@ export const bans = sqliteTable("bans", {
   expiresAt: integer("expires_at"),
   createdBy: text("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Manga listesi (Okuyorum / Tamamladım / Bekletiyorum / Bıraktım / Planlıyorum)
+export const mangaList = sqliteTable("manga_list", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mangaSlug: text("manga_slug").notNull(),
+  status: text("status").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
 // Özel mesajlaşma
