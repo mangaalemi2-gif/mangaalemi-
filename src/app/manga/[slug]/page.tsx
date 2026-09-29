@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BookOpen, Star, Clock, Heart } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
+import CommentSection from "@/components/CommentSection";
 
 // Manifest'ten bölüm listesi çıkar
 function getChapters(slug: string) {
@@ -173,6 +174,9 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
           ))}
         </div>
       </div>
+
+      {/* Manga Yorumları */}
+      <CommentSection type="manga" slug={slug} />
     </div>
   );
 }

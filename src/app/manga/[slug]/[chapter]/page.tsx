@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 import ReadingTracker from "./ReadingTracker";
+import CommentSection from "@/components/CommentSection";
 
 // Manifest'ten bölüm görselleri al
 function getChapterImages(slug: string, chapter: string): string[] {
@@ -119,7 +120,7 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
       </div>
 
       {/* Bağış / Destek Kutusu */}
-      <div className="glass-panel p-6 rounded-3xl text-center max-w-xl mx-auto border-accent/20 mb-12">
+      <div className="glass-panel p-6 rounded-3xl text-center max-w-xl mx-auto border-accent/20 mb-8">
         <h3 className="text-xl font-bold text-white mb-2">Çevirmeni Destekle ☕</h3>
         <p className="text-gray-400 text-sm mb-4">
           Bu bölümü okuduğunuz için teşekkürler! Çevirmene destek olmak isterseniz aşağıdaki butona tıklayabilirsiniz.
@@ -128,6 +129,12 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
           Bağış Yap
         </button>
       </div>
+
+      {/* Bölüm Yorumları */}
+      <CommentSection type="chapter" slug={slug} chapter={chapter} />
+
+      {/* Site Geliştirme Önerileri */}
+      <CommentSection type="feedback" />
     </div>
   );
 }
