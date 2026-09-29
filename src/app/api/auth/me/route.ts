@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         email: user.email,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        bio: (user as any).bio ?? null,
         badge: user.badge,
         createdAt: user.createdAt,
       },

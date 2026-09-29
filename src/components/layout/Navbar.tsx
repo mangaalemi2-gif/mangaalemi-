@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { BookOpen, Search, User, Menu, LogOut } from "lucide-react";
+import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface UserData {
@@ -8,6 +8,12 @@ interface UserData {
   username: string;
   role: string;
 }
+
+const NAV_LINKS = [
+  { href: "/sohbet", label: "Sohbet", icon: MessagesSquare },
+  { href: "/anketler", label: "Anketler", icon: BarChart3 },
+  { href: "/destek", label: "Destek", icon: LifeBuoy },
+];
 
 export default function Navbar() {
   const [user, setUser] = useState<UserData | null>(null);
@@ -39,13 +45,24 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex-shrink-0 flex items-center">
+          <div className="flex-shrink-0 flex items-center gap-6">
             <Link href="/" className="flex items-center gap-2 group">
               <BookOpen className="h-8 w-8 text-primary group-hover:text-accent transition-colors duration-300" />
               <span className="font-bold text-2xl tracking-tight text-white">
                 Manga<span className="text-primary group-hover:text-accent transition-colors duration-300">Alemi</span>
               </span>
             </Link>
+            <div className="hidden lg:flex items-center gap-1">
+              {NAV_LINKS.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className="px-3 py-2 rounded-xl text-sm text-gray-400 hover:text-white hover:bg-surface-light transition-all flex items-center gap-1.5"
+                >
+                  <l.icon className="w-4 h-4" /> {l.label}
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Desktop Search */}
@@ -112,40 +129,52 @@ export default function Navbar() {
         {/* Mobile Menu */}
         {mobileOpen && (
           <div className="md:hidden pb-4 space-y-2 border-t border-white/5 pt-4">
-            {user ? (
-              <>
-                <Link
-                  href="/profile"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-surface-light transition-all"
-                >
-                  <User className="w-5 h-5" /> {user.username}
-                </Link>
-                <button
-                  onClick={() => { handleLogout(); setMobileOpen(false); }}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-400 hover:text-red-400 hover:bg-surface-light transition-all w-full text-left"
-                >
-                  <LogOut className="w-5 h-5" /> Çıkış Yap
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-surface-light transition-all"
-                >
-                  Giriş Yap
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 py-2 rounded-xl text-primary font-bold hover:bg-surface-light transition-all"
-                >
-                  Kayıt Ol
-                </Link>
-              </>
-            )}
+            {NAV_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-surface-light transition-all"
+              >
+                <l.icon className="w-5 h-5" /> {l.label}
+              </Link>
+            ))}
+            <div className="border-t border-white/5 pt-2 space-y-2">
+              {user ? (
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-surface-light transition-all"
+                  >
+                    <User className="w-5 h-5" /> {user.username}
+                  </Link>
+                  <button
+                    onClick={() => { handleLogout(); setMobileOpen(false); }}
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-gray-400 hover:text-red-400 hover:bg-surface-light transition-all w-full text-left"
+                  >
+                    <LogOut className="w-5 h-5" /> Çıkış Yap
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 rounded-xl text-gray-300 hover:text-white hover:bg-surface-light transition-all"
+                  >
+                    Giriş Yap
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 rounded-xl text-primary font-bold hover:bg-surface-light transition-all"
+                  >
+                    Kayıt Ol
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

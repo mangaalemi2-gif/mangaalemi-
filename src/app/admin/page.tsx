@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye } from "lucide-react";
+import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye, MessageSquare, LifeBuoy, Flag, Trash2 } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
@@ -12,13 +12,20 @@ interface UserData {
   role: string;
 }
 
+type Tab = "overview" | "mangas" | "users" | "comments" | "tickets" | "reports" | "polls";
+
 export default function AdminPage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"overview" | "mangas" | "users">("overview");
+  const [activeTab, setActiveTab] = useState<Tab>("overview");
+  const [users, setUsers] = useState<any[]>([]);
+  const [comments, setComments] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [polls, setPolls] = useState<any[]>([]);
+  const [tabLoading, setTabLoading] = useState(false);
   const router = useRouter();
 
-  // Manifest'ten manga ve bölüm bilgilerini çıkar
   const mangaData = Object.entries(mangaManifest as Record<string, string[]>);
   const mangaSlugs = [...new Set(mangaData.map(([key]) => key.split("/")[0]))];
   const totalChapters = mangaData.length;
@@ -47,6 +54,52 @@ export default function AdminPage() {
     checkAdmin();
   }, [router]);
 
+  async function loadTab(tab: Tab) {
+    setTabLoading(true);
+    try {
+      if (tab === "users") {
+        const res = await fetch("/api/admin/users");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setUsers(d.users || []);
+        }
+      } else if (tab === "comments") {
+        const res = await fetch("/api/comments?all=1");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setComments(d.comments || []);
+        }
+      } else if (tab === "tickets") {
+        const res = await fetch("/api/support?all=1");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setTickets(d.tickets || []);
+        }
+      } else if (tab === "reports") {
+        const res = await fetch("/api/reports");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setReports(d.reports || []);
+        }
+      } else if (tab === "polls") {
+        const res = await fetch("/api/polls");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setPolls(d.polls || []);
+        }
+      }
+    } finally {
+      setTabLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (user && ["users", "comments", "tickets", "reports", "polls"].includes(activeTab)) {
+      loadTab(activeTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, user]);
+
   if (loading) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
@@ -71,9 +124,52 @@ export default function AdminPage() {
       });
   }
 
+  async function updateUserRole(id: string, role: string) {
+    await fetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, role }) });
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, role } : u)));
+  }
+
+  async function deleteUser(id: string) {
+    if (!confirm("Kullanıcı silinsin mi? Yorumları ve oyları da silinir!")) return;
+    const res = await fetch(`/api/admin/users?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (res.ok) setUsers((prev) => prev.filter((u) => u.id !== id));
+    else alert("Silinemedi (kendini silemezsin).");
+  }
+
+  async function deleteComment(id: string) {
+    if (!confirm("Yorum silinsin mi?")) return;
+    const res = await fetch(`/api/comments?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (res.ok) setComments((prev) => prev.filter((c) => c.id !== id));
+  }
+
+  async function updateTicket(id: string, status: string) {
+    await fetch("/api/support", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
+    setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
+  }
+
+  async function updateReport(id: string, status: string) {
+    await fetch("/api/reports", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status }) });
+    setReports((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  }
+
+  async function deletePoll(id: string) {
+    if (!confirm("Anket silinsin mi?")) return;
+    await fetch(`/api/polls?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    setPolls((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  const tabs: { key: Tab; label: string; icon: any }[] = [
+    { key: "overview", label: "Genel Bakış", icon: BarChart3 },
+    { key: "mangas", label: "Mangalar", icon: BookOpen },
+    { key: "users", label: `Kullanıcılar (${users.length || ""})`, icon: Users },
+    { key: "comments", label: "Yorumlar", icon: MessageSquare },
+    { key: "tickets", label: `Destek (${tickets.length || ""})`, icon: LifeBuoy },
+    { key: "reports", label: `Bildirimler (${reports.length || ""})`, icon: Flag },
+    { key: "polls", label: "Anketler", icon: BarChart3 },
+  ];
+
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
-      {/* Admin Üst Bar */}
+    <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="glass-panel rounded-3xl p-6 border border-red-500/20 shadow-2xl relative overflow-hidden">
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-red-500/10 blur-[60px] rounded-full pointer-events-none" />
         <div className="relative z-10 flex items-center justify-between">
@@ -95,19 +191,14 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Tab Navigasyonu */}
-      <div className="flex gap-2">
-        {[
-          { key: "overview" as const, label: "Genel Bakış", icon: BarChart3 },
-          { key: "mangas" as const, label: "Mangalar", icon: BookOpen },
-          { key: "users" as const, label: "Kullanıcılar", icon: Users },
-        ].map((tab) => (
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-all ${
               activeTab === tab.key
-                ? "bg-primary/20 text-primary border border-primary/30"
+                ? "bg-red-500/20 text-red-300 border border-red-500/30"
                 : "bg-surface-light/50 text-gray-400 border border-white/5 hover:text-white hover:border-white/10"
             }`}
           >
@@ -117,7 +208,6 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* Genel Bakış */}
       {activeTab === "overview" && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="glass-panel rounded-2xl p-6 border border-white/10">
@@ -144,7 +234,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Manga Listesi */}
       {activeTab === "mangas" && (
         <div className="space-y-6">
           {mangaSlugs.map((slug) => {
@@ -153,17 +242,8 @@ export default function AdminPage() {
               <div key={slug} className="glass-panel rounded-2xl p-6 border border-white/10">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-20 rounded-lg overflow-hidden bg-surface-light flex-shrink-0">
-                      <img
-                        src={`/mangas/${slug}/Chapter1/1.jpg`}
-                        alt={slug}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">
-                        {slug === "dragon-ball-1984" ? "Dragon Ball" : slug}
-                      </h3>
+                      <h3 className="text-xl font-bold text-white">{slug}</h3>
                       <p className="text-sm text-gray-400">
                         {chapters.length} Bölüm • {chapters.reduce((s, c) => s + c.pageCount, 0)} Sayfa
                       </p>
@@ -173,7 +253,6 @@ export default function AdminPage() {
                     Aktif
                   </span>
                 </div>
-
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {chapters.map((ch) => (
                     <Link
@@ -194,14 +273,121 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Kullanıcılar (şimdilik bilgilendirme) */}
       {activeTab === "users" && (
-        <div className="glass-panel rounded-2xl p-8 border border-white/10 text-center">
-          <Users className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">Kullanıcı Yönetimi</h3>
-          <p className="text-gray-400 max-w-md mx-auto">
-            D1 veritabanı bağlandığında burada kayıtlı kullanıcıları görebilecek, rol atayabilecek ve hesapları yönetebileceksiniz.
-          </p>
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="font-bold text-white mb-4">Kayıtlı Kullanıcılar ({users.length})</h3>
+          {tabLoading ? <p className="text-gray-500 text-sm animate-pulse">Yükleniyor...</p> : users.length === 0 ? <p className="text-gray-500 text-sm">Kullanıcı bulunamadı.</p> : (
+            <div className="space-y-2">
+              {users.map((u: any) => (
+                <div key={u.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-surface-light/40 border border-white/5 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center font-bold text-white text-sm">
+                      {u.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{u.username} <span className="text-xs text-gray-500">{u.email}</span></p>
+                      <p className="text-[11px] text-gray-500">{u.role}{u.badge ? ` • ${u.badge}` : ""}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select value={u.role} onChange={(e) => updateUserRole(u.id, e.target.value)} className="bg-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
+                      <option value="member">member</option>
+                      <option value="editor">editor</option>
+                      <option value="admin">admin</option>
+                    </select>
+                    <button onClick={() => deleteUser(u.id)} className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20" title="Sil">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "comments" && (
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="font-bold text-white mb-4">Son Yorumlar ({comments.length})</h3>
+          {tabLoading ? <p className="text-gray-500 text-sm animate-pulse">Yükleniyor...</p> : comments.length === 0 ? <p className="text-gray-500 text-sm">Yorum yok — kullanıcılar yazdıkça burada birikir.</p> : (
+            <div className="space-y-2">
+              {comments.map((c: any) => (
+                <div key={c.id} className="p-3 rounded-xl bg-surface-light/40 border border-white/5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs text-gray-400">@{c.username || "?"} • {c.context}{c.slug ? ` • ${c.slug}` : ""}{c.chapter ? `/${c.chapter}` : ""} • {c.likeCount} beğeni</p>
+                    <button onClick={() => deleteComment(c.id)} className="text-gray-600 hover:text-red-400" title="Sil"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                  <p className="text-sm text-gray-200 mt-1">{c.content}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "tickets" && (
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="font-bold text-white mb-4">Destek Talepleri ({tickets.length})</h3>
+          {tabLoading ? <p className="text-gray-500 text-sm animate-pulse">Yükleniyor...</p> : tickets.length === 0 ? <p className="text-gray-500 text-sm">Talep yok.</p> : (
+            <div className="space-y-3">
+              {tickets.map((t: any) => (
+                <div key={t.id} className="p-4 rounded-xl bg-surface-light/40 border border-white/5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                    <p className="font-semibold text-white text-sm">{t.subject} <span className="text-xs text-gray-500">— @{t.username || t.email || "misafir"}</span></p>
+                    <select value={t.status} onChange={(e) => updateTicket(t.id, e.target.value)} className="bg-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
+                      <option value="open">open</option>
+                      <option value="in_progress">in_progress</option>
+                      <option value="closed">closed</option>
+                    </select>
+                  </div>
+                  <p className="text-sm text-gray-400">{t.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "reports" && (
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="font-bold text-white mb-4">Kullanıcı / Mesaj Bildirimleri ({reports.length})</h3>
+          {tabLoading ? <p className="text-gray-500 text-sm animate-pulse">Yükleniyor...</p> : reports.length === 0 ? <p className="text-gray-500 text-sm">Bildirim yok.</p> : (
+            <div className="space-y-3">
+              {reports.map((r: any) => (
+                <div key={r.id} className="p-4 rounded-xl bg-surface-light/40 border border-white/5">
+                  <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                    <p className="text-sm text-white"><span className="px-2 py-0.5 rounded bg-red-500/15 border border-red-500/25 text-red-300 text-[11px] font-bold mr-2">{r.targetType}</span>{r.reason} <span className="text-xs text-gray-500">— bildiren: @{r.reporterName || "?"}</span></p>
+                    <select value={r.status} onChange={(e) => updateReport(r.id, e.target.value)} className="bg-surface border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white">
+                      <option value="pending">pending</option>
+                      <option value="reviewed">reviewed</option>
+                      <option value="dismissed">dismissed</option>
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-500">Hedef ID: {r.targetId}</p>
+                  {r.detail && <p className="text-sm text-gray-400 mt-1">{r.detail}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "polls" && (
+        <div className="glass-panel rounded-2xl p-6 border border-white/10">
+          <h3 className="font-bold text-white mb-4">Anketler ({polls.length})</h3>
+          {tabLoading ? <p className="text-gray-500 text-sm animate-pulse">Yükleniyor...</p> : polls.length === 0 ? <p className="text-gray-500 text-sm">Anket yok.</p> : (
+            <div className="space-y-2">
+              {polls.map((p: any) => (
+                <div key={p.id} className="flex items-center justify-between gap-2 p-3 rounded-xl bg-surface-light/40 border border-white/5">
+                  <div>
+                    <p className="text-sm text-white font-medium">{p.question}</p>
+                    <p className="text-xs text-gray-500">@{p.username || "?"} • {p.voteCount} oy</p>
+                  </div>
+                  <button onClick={() => deletePoll(p.id)} className="text-gray-600 hover:text-red-400" title="Sil"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

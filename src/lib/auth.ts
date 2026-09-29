@@ -27,3 +27,47 @@ export function generateSessionToken(): string {
     .map(b => b.toString(16).padStart(2, "0"))
     .join("");
 }
+
+// Oturum doğrulama — API route'ları için
+// Cookie'deki "session" id'sini okuyup sessions tablosunda doğrular.
+export async function getSession(req: Request): Promise<{ userId: string; sessionId: string } | null> {
+  try {
+    const cookieHeader = req.headers.get("cookie") || "";
+    // NextRequest.cookies varsa onu tercih et
+    let sessionId: string | undefined;
+    const anyReq = req as any;
+    if (anyReq.cookies?.get) {
+      sessionId = anyReq.cookies.get("session")?.value;
+    }
+    if (!sessionId && cookieHeader) {
+      const match = cookieHeader.split(";").map((c) => c.trim()).find((c) => c.startsWith("session="));
+      if (match) sessionId = decodeURIComponent(match.split("=").slice(1).join("="));
+    }
+    if (!sessionId) return null;
+
+    const { getDb } = await import("@/lib/db");
+    const { sessions } = await import("@/lib/db/schema");
+    const { eq } = await import("drizzle-orm");
+
+    let db: any = null;
+    try {
+      db = getDb((anyReq as any).cf?.env);
+    } catch {
+      return null;
+    }
+
+    const rows = await db.select().from(sessions).where(eq(sessions.id, sessionId));
+    const session = Array.isArray(rows) ? rows[0] : (await rows.get?.()) ?? rows;
+    // drizzle d1 .get() kullanan projelerde rows dizi döner; yukarıdaki yeterli
+    if (!session) return null;
+    if (session.expiresAt && session.expiresAt < Math.floor(Date.now() / 1000)) {
+      try {
+        await db.delete(sessions).where(eq(sessions.id, sessionId));
+      } catch { /* yoksay */ }
+      return null;
+    }
+    return { userId: session.userId, sessionId: session.id };
+  } catch {
+    return null;
+  }
+}
