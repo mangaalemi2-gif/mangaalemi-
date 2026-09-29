@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { comments, commentLikes, users, notifications } from "@/lib/db/schema";
+import { comments, commentLikes, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { maskProfanity } from "@/lib/profanity";
 import { getActiveBan, banMessage, floodWait } from "@/lib/moderation";
 import { bumpActivity } from "@/lib/streaks";
+import { notify } from "@/lib/notifications";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -194,8 +195,7 @@ export async function POST(req: NextRequest) {
         const [parent] = await db.select().from(comments).where(eq(comments.id, parentId));
         if (parent && parent.userId !== session.userId) {
           const [me] = await db.select().from(users).where(eq(users.id, session.userId));
-          await db.insert(notifications).values({
-            id: randomUUID(),
+          await notify(db, {
             userId: parent.userId,
             type: "reply",
             title: "Yorumuna yanıt geldi",
@@ -216,8 +216,7 @@ export async function POST(req: NextRequest) {
           if (name.toLowerCase() === String((me as any)?.username || "").toLowerCase()) continue;
           const [target] = await db.select().from(users).where(eq(users.username, name));
           if (target && target.id !== session.userId) {
-            await db.insert(notifications).values({
-              id: randomUUID(),
+            await notify(db, {
               userId: target.id,
               type: "mention",
               title: "Biri seni etiketledi",

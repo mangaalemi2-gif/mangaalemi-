@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { announcements, notifications, users, seriesFollows, siteSettings } from "@/lib/db/schema";
+import { announcements, users, seriesFollows, siteSettings } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
 import { getManga, mangaCover } from "@/data/mangas";
 import { SITE_URL } from "@/lib/site";
 import { eq } from "drizzle-orm";
@@ -31,8 +32,7 @@ export async function POST(req: NextRequest) {
 
     const followers = await db.select().from(seriesFollows).where(eq(seriesFollows.mangaSlug, mangaSlug));
     for (const f of followers) {
-      await db.insert(notifications).values({
-        id: randomUUID(),
+      await notify(db, {
         userId: f.userId,
         type: "announcement",
         title,

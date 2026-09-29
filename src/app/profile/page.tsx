@@ -88,12 +88,13 @@ export default function ProfilePage() {
   const [achievements, setAchievements] = useState<any[]>([]);
   const [delPass, setDelPass] = useState("");
   const [delConfirm, setDelConfirm] = useState("");
+  const [prefs, setPrefs] = useState<Record<string, boolean> | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes, mlRes, badgeRes, achRes] = await Promise.all([
+        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes, sfRes, stRes, mlRes, badgeRes, achRes, prefRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/reading-history"),
@@ -105,6 +106,7 @@ export default function ProfilePage() {
           fetch("/api/mylist"),
           fetch("/api/badges"),
           fetch("/api/achievements"),
+          fetch("/api/notification-prefs"),
         ]);
 
         if (!meRes.ok) {
@@ -172,6 +174,10 @@ export default function ProfilePage() {
         if (achRes.ok) {
           const a = (await achRes.json()) as any;
           setAchievements((a.achievements || []).filter((x: any) => x.earnedAt));
+        }
+        if (prefRes.ok) {
+          const p = (await prefRes.json()) as any;
+          if (p.prefs) setPrefs(p.prefs);
         }
       } catch {
         router.push("/login");
@@ -315,6 +321,17 @@ export default function ProfilePage() {
       setSaveMsg("✓ Okuma geçmişi temizlendi.");
       setTimeout(() => setSaveMsg(""), 3000);
     }
+  }
+
+  async function togglePref(key: string, value: boolean) {
+    setPrefs((prev) => (prev ? { ...prev, [key]: value } : prev));
+    try {
+      await fetch("/api/notification-prefs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, value }),
+      });
+    } catch { /* yoksay */ }
   }
 
   async function handleDeleteAccount(e: React.FormEvent) {
@@ -914,6 +931,29 @@ export default function ProfilePage() {
 
           {saveErr && <p className="text-red-400 text-sm">{saveErr}</p>}
           {saveMsg && <p className="text-primary text-sm font-medium">{saveMsg}</p>}
+
+          <div className="glass-panel rounded-3xl p-6 border border-white/10 space-y-3">
+            <h2 className="font-bold text-white">Bildirim Tercihleri</h2>
+            <p className="text-xs text-gray-500">Kapattığın türde bildirim almazsın.</p>
+            {[
+              { key: "reply", label: "Yorumuma yanıt gelince" },
+              { key: "follow", label: "Biri beni takip edince" },
+              { key: "mention", label: "Biri beni etiketleyince" },
+              { key: "announcement", label: "Duyuru ve yeni bölümler" },
+              { key: "achievement", label: "Başarım kazanınca" },
+              { key: "streak", label: "Seri kırılma uyarıları" },
+            ].map((p) => (
+              <label key={p.key} className="flex items-center justify-between gap-3 bg-surface-light/40 border border-white/5 rounded-xl px-4 py-2.5 cursor-pointer">
+                <span className="text-sm text-gray-200">{p.label}</span>
+                <input
+                  type="checkbox"
+                  checked={prefs ? !!prefs[p.key] : true}
+                  onChange={(e) => togglePref(p.key, e.target.checked)}
+                  className="w-5 h-5 accent-green-500"
+                />
+              </label>
+            ))}
+          </div>
 
           <div className="glass-panel rounded-3xl p-6 border border-red-500/25 space-y-4">
             <h2 className="font-bold text-red-400">Tehlikeli Bölge</h2>

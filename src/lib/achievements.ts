@@ -80,16 +80,14 @@ export async function checkAchievements(db: any, userId: string): Promise<Award[
     if (ownedIds.has(a.id) || !earned[a.key]) continue;
     await db.insert(userAchievements).values({ userId, achievementId: a.id });
     fresh.push({ key: a.key, name: a.name, icon: a.icon, description: a.description });
-    try {
-      await db.insert(notifications).values({
-        id: randomUUID(),
-        userId,
-        type: "achievement",
-        title: `Yeni başarım: ${a.icon} ${a.name}`,
-        message: a.description,
-        link: "/profile",
-      });
-    } catch { /* yoksay */ }
+    const { notify } = await import("./notifications");
+    await notify(db, {
+      userId,
+      type: "achievement",
+      title: `Yeni başarım: ${a.icon} ${a.name}`,
+      message: a.description,
+      link: "/profile",
+    });
   }
   return fresh;
 }

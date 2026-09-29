@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { announcements, notifications, users } from "@/lib/db/schema";
+import { announcements, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
 import { eq, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -51,12 +52,11 @@ export async function POST(req: NextRequest) {
       message: message.trim(),
     });
 
-    // Tüm üyelere bildirim
+    // Tüm üyelere bildirim (tercihlere saygılı)
     const allUsers = await db.select({ id: users.id }).from(users);
     for (const u of allUsers) {
       if (u.id === session.userId) continue;
-      await db.insert(notifications).values({
-        id: randomUUID(),
+      await notify(db, {
         userId: u.id,
         type: "announcement",
         title: title.trim(),

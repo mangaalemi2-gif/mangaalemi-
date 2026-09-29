@@ -240,6 +240,18 @@ export const userAchievements = sqliteTable("user_achievements", {
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
+// Bildirim tercihleri
+export const notificationPrefs = sqliteTable("notification_prefs", {
+  userId: text("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  reply: integer("reply", { mode: "boolean" }).default(true),
+  follow: integer("follow", { mode: "boolean" }).default(true),
+  mention: integer("mention", { mode: "boolean" }).default(true),
+  announcement: integer("announcement", { mode: "boolean" }).default(true),
+  achievement: integer("achievement", { mode: "boolean" }).default(true),
+  streak: integer("streak", { mode: "boolean" }).default(true),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
 // Öne çıkan manga (anasayfa vitrini)
 export const featured = sqliteTable("featured", {
   id: text("id").primaryKey(),

@@ -2,11 +2,13 @@ import Link from "next/link";
 import { Flame } from "lucide-react";
 import FeaturedHero from "@/components/FeaturedHero";
 import MonthlyVote from "@/components/MonthlyVote";
+import ContinueReading from "@/components/ContinueReading";
 
 export default function Home() {
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
       <FeaturedHero />
+      <ContinueReading />
       <MonthlyVote />
 
       {/* Popüler Seriler (Sadece Dragon Ball) */}

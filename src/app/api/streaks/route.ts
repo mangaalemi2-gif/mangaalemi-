@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { getStreak, getGoalProgress, todayStr } from "@/lib/streaks";
+import { notify } from "@/lib/notifications";
 import { dailyActivity, notifications } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
-import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -53,8 +53,7 @@ export async function GET(req: NextRequest) {
           return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
         });
         if (!sentToday) {
-          await db.insert(notifications).values({
-            id: randomUUID(),
+          await notify(db, {
             userId: session.userId,
             type: kind,
             title: w.type === "reading" ? "🔥 Okuma serin kırılmak üzere!" : "💬 Sohbet serin kırılmak üzere!",

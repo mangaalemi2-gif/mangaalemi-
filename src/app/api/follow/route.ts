@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { follows, notifications } from "@/lib/db/schema";
+import { follows } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
+import { notify } from "@/lib/notifications";
 import { eq, and, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -63,8 +64,7 @@ export async function POST(req: NextRequest) {
     // Bildirim gönder
     const { users } = await import("@/lib/db/schema");
     const [me] = await db.select().from(users).where(eq(users.id, session.userId));
-    await db.insert(notifications).values({
-      id: randomUUID(),
+    await notify(db, {
       userId: targetUserId,
       type: "follow",
       title: "Yeni takipçi",
