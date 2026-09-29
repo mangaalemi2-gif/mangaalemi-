@@ -4,7 +4,7 @@ import { sessions, readingHistory } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { generateId } from "@/lib/auth";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 // Okuma geçmişini kaydet/güncelle
 export async function POST(request: NextRequest) {

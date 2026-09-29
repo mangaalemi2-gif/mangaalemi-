@@ -4,7 +4,7 @@ import { users, sessions } from "@/lib/db/schema";
 import { verifyPassword, generateSessionToken } from "@/lib/auth";
 import { eq, or } from "drizzle-orm";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
