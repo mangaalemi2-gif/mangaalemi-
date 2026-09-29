@@ -32,7 +32,7 @@ export default function AdminPage() {
           router.push("/login");
           return;
         }
-        const data = await res.json();
+        const data = await res.json() as { user: UserData };
         if (data.user.role !== "admin") {
           router.push("/");
           return;
