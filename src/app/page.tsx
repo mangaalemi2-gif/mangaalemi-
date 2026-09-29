@@ -34,10 +34,10 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {[
-            { id: "dragon-ball-1984", title: "Dragon Ball", year: 1984 },
-            { id: "chainsaw-man", title: "Chainsaw Man", year: 2018 },
-            { id: "demon-slayer", title: "Demon Slayer", year: 2016 },
-            { id: "naruto", title: "Naruto", year: 1999 },
+            { id: "dragon-ball-1984", title: "Dragon Ball", year: 1984, cover: "cover.png" },
+            { id: "chainsaw-man", title: "Chainsaw Man", year: 2018, cover: "cover.webp" },
+            { id: "demon-slayer", title: "Demon Slayer", year: 2016, cover: "cover.jpg" },
+            { id: "naruto", title: "Naruto", year: 1999, cover: "cover.webp" },
           ].map((manga) => (
             <Link key={manga.id} href={`/manga/${manga.id}`}>
               <div className="group relative rounded-xl overflow-hidden bg-surface-light aspect-[2/3] cursor-pointer hover:shadow-[0_0_20px_rgba(157,0,255,0.3)] transition-shadow">
@@ -48,7 +48,7 @@ export default function Home() {
                   <p className="text-xs text-primary mt-1">Yıl: {manga.year}</p>
                 </div>
                 <div className="w-full h-full bg-surface group-hover:scale-110 transition-transform duration-500 flex items-center justify-center text-4xl shadow-inner">
-                  <img src={`/mangas/${manga.id}/cover.png`} alt={manga.title} className="w-full h-full object-cover" />
+                  <img src={`/mangas/${manga.id}/${manga.cover}`} alt={manga.title} className="w-full h-full object-cover" />
                 </div>
               </div>
             </Link>

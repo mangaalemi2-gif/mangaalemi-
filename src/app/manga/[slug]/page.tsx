@@ -33,6 +33,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
       description: "Son Goku, derin dağlarda tek başına yaşayan saf ve güçlü bir çocuktur...",
       genres: ["Aksiyon", "Macera", "Komedi", "Shounen"],
       year: 1984,
+      coverExt: "png",
     },
     "chainsaw-man": {
       title: "Chainsaw Man",
@@ -41,6 +42,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
       description: "Denji, borçlarını ödemek için iblis avlayan fakir bir gençtir. Pochita adında testere iblisi bir köpeği vardır...",
       genres: ["Aksiyon", "Karanlık Fantezi", "Korku", "Shounen"],
       year: 2018,
+      coverExt: "webp",
     },
     "demon-slayer": {
       title: "Demon Slayer (Kimetsu no Yaiba)",
@@ -49,6 +51,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
       description: "Ailesi iblisler tarafından katledilen ve kız kardeşi Nezuko bir iblise dönüşen Tanjirou'nun hikayesi...",
       genres: ["Aksiyon", "Macera", "Doğaüstü", "Shounen"],
       year: 2016,
+      coverExt: "jpg",
     },
     "naruto": {
       title: "Naruto",
@@ -57,6 +60,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
       description: "İçinde dokuz kuyruklu tilki mühürlü olan Naruto Uzumaki'nin Hokage olma yolundaki serüveni...",
       genres: ["Aksiyon", "Macera", "Dövüş Sanatları", "Shounen"],
       year: 1999,
+      coverExt: "webp",
     },
   };
 
@@ -67,12 +71,13 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
     description: "Bu manga hakkında henüz bir açıklama girilmemiş.",
     genres: ["Manga"],
     year: "-",
+    coverExt: "png",
   };
 
   const manga = {
     ...meta,
     status: chapters.length > 0 ? "Devam Ediyor" : "Bilinmiyor",
-    cover: `/mangas/${slug}/cover.png`,
+    cover: `/mangas/${slug}/cover.${meta.coverExt || "png"}`,
   };
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
