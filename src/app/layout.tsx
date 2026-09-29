@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
@@ -6,10 +6,23 @@ import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#000000",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "MangaAlemi - Ücretsiz Manga ve Webtoon Oku",
   description: "Modern, hızlı ve kesintisiz manga okuma platformu. Favori serilerini takip et!",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "MangaAlemi",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 const THEME_SCRIPT = `(function(){try{var t=localStorage.getItem("theme");if(t==="light"){document.documentElement.classList.remove("dark")}else{document.documentElement.classList.add("dark")}var a=localStorage.getItem("accent");if(a){document.documentElement.style.setProperty("--c-accent",a)}}catch(e){document.documentElement.classList.add("dark")}}})();`;

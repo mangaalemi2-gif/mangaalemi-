@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Flame } from "lucide-react";
 import FeaturedHero from "@/components/FeaturedHero";
+import MonthlyVote from "@/components/MonthlyVote";
 
 export default function Home() {
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
       <FeaturedHero />
+      <MonthlyVote />
 
       {/* Popüler Seriler (Sadece Dragon Ball) */}
       <section>
@@ -29,7 +31,7 @@ export default function Home() {
                   <p className="text-xs text-primary mt-1">Yıl: {manga.year}</p>
                 </div>
                 <div className="w-full h-full bg-surface group-hover:scale-110 transition-transform duration-500 flex items-center justify-center text-4xl shadow-inner">
-                  <img src={`/mangas/${manga.id}/${manga.cover}`} alt={manga.title} className="w-full h-full object-cover" />
+                  <img src={`/mangas/${manga.id}/${manga.cover}`} alt={manga.title} className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 </div>
               </div>
             </Link>

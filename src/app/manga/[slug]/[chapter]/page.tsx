@@ -103,7 +103,9 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
             src={src}
             alt={`Sayfa ${index + 1}`}
             className="w-full max-w-full h-auto block m-0 select-none"
-            loading="lazy"
+            loading={index === 0 ? "eager" : "lazy"}
+            fetchPriority={index === 0 ? "high" : "auto"}
+            decoding="async"
           />
         ))}
       </div>
