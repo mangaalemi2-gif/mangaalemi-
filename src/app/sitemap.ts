@@ -9,6 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "",
     "/ara",
     "/sohbet",
+    "/akis",
     "/anketler",
     "/liderlik",
     "/duyurular",

@@ -573,6 +573,7 @@ export default function ProfilePage() {
           <div className="glass-panel rounded-2xl p-6 border border-white/10">
             <h3 className="font-bold text-white mb-3">Hızlı Erişim</h3>
             <div className="grid gap-2">
+              <Link href="/akis" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-primary/30 text-sm text-gray-200 transition-all">👥 Arkadaş Akışı</Link>
               <Link href="/sohbet" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-primary/30 text-sm text-gray-200 transition-all">💬 Genel Sohbete Katıl</Link>
               <Link href="/anketler" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-accent/40 text-sm text-gray-200 transition-all">📊 Anketlere Oy Ver</Link>
               <Link href="/ara" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-accent/40 text-sm text-gray-200 transition-all">🔍 Manga Keşfet</Link>

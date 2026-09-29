@@ -252,6 +252,15 @@ export const notificationPrefs = sqliteTable("notification_prefs", {
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
+// Özel manga notları (sadece sahibi görür)
+export const mangaNotes = sqliteTable("manga_notes", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mangaSlug: text("manga_slug").notNull(),
+  content: text("content").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
 // Öne çıkan manga (anasayfa vitrini)
 export const featured = sqliteTable("featured", {
   id: text("id").primaryKey(),

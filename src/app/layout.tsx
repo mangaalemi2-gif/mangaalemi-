@@ -53,6 +53,8 @@ export default function RootLayout({
             <span className="text-gray-700">•</span>
             <a href="/liderlik" className="hover:text-white transition-colors">Liderlik</a>
             <span className="text-gray-700">•</span>
+            <a href="/akis" className="hover:text-white transition-colors">Akış</a>
+            <span className="text-gray-700">•</span>
             <a href="/duyurular" className="hover:text-white transition-colors">Duyurular</a>
             <span className="text-gray-700">•</span>
             <a href="/destek" className="hover:text-white transition-colors">Destek</a>

@@ -10,6 +10,7 @@ import SeriesFollowButton from "@/components/SeriesFollowButton";
 import Recommendations from "@/components/Recommendations";
 import MyListButton from "@/components/MyListButton";
 import MangaChapters from "@/components/MangaChapters";
+import MangaNotes from "@/components/MangaNotes";
 
 // Manifest'ten bölüm listesi çıkar
 function getChapters(slug: string) {
@@ -142,6 +143,9 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
 
       {/* Manga Yorumları */}
       <CommentSection type="manga" slug={slug} />
+
+      {/* Özel Notlar */}
+      <MangaNotes mangaSlug={slug} />
 
       {/* Öneriler */}
       <Recommendations mangaSlug={slug} />
