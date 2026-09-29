@@ -8,7 +8,7 @@ export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, email, password } = await request.json();
+    const { username, email, password } = await request.json() as any;
 
     if (!username || !email || !password) {
       return NextResponse.json({ error: "Tüm alanlar zorunludur." }, { status: 400 });

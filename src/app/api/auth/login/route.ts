@@ -8,7 +8,7 @@ export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
   try {
-    const { identifier, password } = await request.json();
+    const { identifier, password } = await request.json() as any;
 
     if (!identifier || !password) {
       return NextResponse.json({ error: "Kullanıcı adı/email ve şifre gereklidir." }, { status: 400 });

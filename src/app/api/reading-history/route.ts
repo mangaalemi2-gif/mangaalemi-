@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Geçersiz oturum." }, { status: 401 });
     }
 
-    const { mangaSlug, chapterNumber, pageNumber } = await request.json();
+    const { mangaSlug, chapterNumber, pageNumber } = await request.json() as any;
 
     // Mevcut kayıt var mı?
     const existing = await db
