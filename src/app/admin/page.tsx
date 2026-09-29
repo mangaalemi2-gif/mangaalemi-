@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye, MessageSquare, LifeBuoy, Flag, Trash2 } from "lucide-react";
+import { Shield, Users, BookOpen, BarChart3, ArrowLeft, Eye, MessageSquare, LifeBuoy, Flag, Trash2, Megaphone, Send } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
 
 interface UserData {
@@ -12,7 +12,7 @@ interface UserData {
   role: string;
 }
 
-type Tab = "overview" | "mangas" | "users" | "comments" | "tickets" | "reports" | "polls";
+type Tab = "overview" | "mangas" | "users" | "comments" | "tickets" | "reports" | "polls" | "announcements";
 
 export default function AdminPage() {
   const [user, setUser] = useState<UserData | null>(null);
@@ -23,6 +23,10 @@ export default function AdminPage() {
   const [tickets, setTickets] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
   const [polls, setPolls] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [annTitle, setAnnTitle] = useState("");
+  const [annMsg, setAnnMsg] = useState("");
+  const [annSending, setAnnSending] = useState(false);
   const [tabLoading, setTabLoading] = useState(false);
   const router = useRouter();
 
@@ -87,6 +91,12 @@ export default function AdminPage() {
           const d = (await res.json()) as any;
           setPolls(d.polls || []);
         }
+      } else if (tab === "announcements") {
+        const res = await fetch("/api/admin/announcements");
+        if (res.ok) {
+          const d = (await res.json()) as any;
+          setAnnouncements(d.announcements || []);
+        }
       }
     } finally {
       setTabLoading(false);
@@ -94,7 +104,7 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
-    if (user && ["users", "comments", "tickets", "reports", "polls"].includes(activeTab)) {
+    if (user && ["users", "comments", "tickets", "reports", "polls", "announcements"].includes(activeTab)) {
       loadTab(activeTab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,6 +168,26 @@ export default function AdminPage() {
     setPolls((prev) => prev.filter((p) => p.id !== id));
   }
 
+  async function sendAnnouncement(e: React.FormEvent) {
+    e.preventDefault();
+    if (!annTitle.trim() || !annMsg.trim() || annSending) return;
+    setAnnSending(true);
+    try {
+      const res = await fetch("/api/admin/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: annTitle.trim(), message: annMsg.trim() }),
+      });
+      if (res.ok) {
+        setAnnTitle("");
+        setAnnMsg("");
+        loadTab("announcements");
+      }
+    } finally {
+      setAnnSending(false);
+    }
+  }
+
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: "overview", label: "Genel Bakış", icon: BarChart3 },
     { key: "mangas", label: "Mangalar", icon: BookOpen },
@@ -166,6 +196,7 @@ export default function AdminPage() {
     { key: "tickets", label: `Destek (${tickets.length || ""})`, icon: LifeBuoy },
     { key: "reports", label: `Bildirimler (${reports.length || ""})`, icon: Flag },
     { key: "polls", label: "Anketler", icon: BarChart3 },
+    { key: "announcements", label: "Duyurular", icon: Megaphone },
   ];
 
   return (
@@ -388,6 +419,47 @@ export default function AdminPage() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === "announcements" && (
+        <div className="space-y-4">
+          <form onSubmit={sendAnnouncement} className="glass-panel rounded-2xl p-6 border border-white/10 space-y-3">
+            <h3 className="font-bold text-white">Duyuru Yayınla (tüm üyelere bildirim gider)</h3>
+            <input
+              value={annTitle}
+              onChange={(e) => setAnnTitle(e.target.value)}
+              maxLength={200}
+              placeholder="Başlık — örn: 5 yeni bölüm eklendi!"
+              className="w-full bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50"
+            />
+            <textarea
+              value={annMsg}
+              onChange={(e) => setAnnMsg(e.target.value)}
+              rows={3}
+              maxLength={2000}
+              placeholder="Duyuru metni..."
+              className="w-full bg-surface border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 resize-none"
+            />
+            <button type="submit" disabled={annSending} className="px-5 py-2.5 rounded-xl bg-primary text-black text-sm font-bold hover:scale-105 transition-transform flex items-center gap-2 disabled:opacity-50">
+              <Send className="w-4 h-4" /> {annSending ? "Gönderiliyor..." : "Yayınla"}
+            </button>
+          </form>
+          <div className="glass-panel rounded-2xl p-6 border border-white/10">
+            <h3 className="font-bold text-white mb-4">Geçmiş Duyurular ({announcements.length})</h3>
+            {announcements.length === 0 ? (
+              <p className="text-gray-500 text-sm">Henüz duyuru yok.</p>
+            ) : (
+              <div className="space-y-2">
+                {announcements.map((a: any) => (
+                  <div key={a.id} className="p-3 rounded-xl bg-surface-light/40 border border-white/5">
+                    <p className="text-sm text-white font-medium">{a.title}</p>
+                    <p className="text-sm text-gray-400 mt-1">{a.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

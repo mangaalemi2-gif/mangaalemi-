@@ -61,6 +61,7 @@ export const comments = sqliteTable("comments", {
   chapter: text("chapter"),
   parentId: text("parent_id"), // yanıt ise parent yorumun id'si
   content: text("content").notNull(),
+  isSpoiler: integer("is_spoiler", { mode: "boolean" }).default(false),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
   isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
@@ -114,6 +115,53 @@ export const reports = sqliteTable("reports", {
   reason: text("reason").notNull(),
   detail: text("detail"),
   status: text("status").default("pending"), // pending, reviewed, dismissed
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Favoriler / Kütüphane
+export const favorites = sqliteTable("favorites", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mangaSlug: text("manga_slug").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Manga puanları (1-10)
+export const ratings = sqliteTable("ratings", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  mangaSlug: text("manga_slug").notNull(),
+  score: integer("score").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Takip sistemi
+export const follows = sqliteTable("follows", {
+  id: text("id").primaryKey(),
+  followerId: text("follower_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  followingId: text("following_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Bildirimler
+export const notifications = sqliteTable("notifications", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // "reply", "follow", "announcement"
+  title: text("title").notNull(),
+  message: text("message"),
+  link: text("link"),
+  isRead: integer("is_read", { mode: "boolean" }).default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Admin duyuruları
+export const announcements = sqliteTable("announcements", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 

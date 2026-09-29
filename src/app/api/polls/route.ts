@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { polls, pollVotes, users } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
+import { maskProfanity } from "@/lib/profanity";
 import { eq, and, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -83,8 +84,8 @@ export async function POST(req: NextRequest) {
     await db.insert(polls).values({
       id,
       userId: session.userId,
-      question: question.trim(),
-      options: JSON.stringify(cleanOptions),
+      question: maskProfanity(question.trim()),
+      options: JSON.stringify(cleanOptions.map((o) => maskProfanity(o))),
       endsAt: endsAtVal,
     });
 

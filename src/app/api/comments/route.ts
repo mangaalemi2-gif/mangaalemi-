@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
-import { comments, commentLikes, users } from "@/lib/db/schema";
+import { comments, commentLikes, users, notifications } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
+import { maskProfanity } from "@/lib/profanity";
 import { eq, and, sql, isNull } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -28,6 +29,7 @@ export async function GET(req: NextRequest) {
         .select({
           id: comments.id,
           content: comments.content,
+          isSpoiler: comments.isSpoiler,
           parentId: comments.parentId,
           context: comments.context,
           slug: comments.slug,
@@ -56,6 +58,7 @@ export async function GET(req: NextRequest) {
         .select({
           id: comments.id,
           content: comments.content,
+          isSpoiler: comments.isSpoiler,
           parentId: comments.parentId,
           context: comments.context,
           slug: comments.slug,
@@ -85,6 +88,7 @@ export async function GET(req: NextRequest) {
       .select({
         id: comments.id,
         content: comments.content,
+        isSpoiler: comments.isSpoiler,
         parentId: comments.parentId,
         createdAt: comments.createdAt,
         userId: comments.userId,
@@ -107,6 +111,7 @@ export async function GET(req: NextRequest) {
           .select({
             id: comments.id,
             content: comments.content,
+            isSpoiler: comments.isSpoiler,
             parentId: comments.parentId,
             createdAt: comments.createdAt,
             userId: comments.userId,
@@ -138,12 +143,15 @@ export async function POST(req: NextRequest) {
 
     const db = getDb();
     const body = await req.json() as any;
-    const { content, context, slug, chapter, parentId } = body;
+    const { content, context, slug, chapter, parentId, isSpoiler } = body;
 
     if (!content?.trim()) return NextResponse.json({ error: "Yorum boş olamaz." }, { status: 400 });
     if (content.trim().length > 2000) return NextResponse.json({ error: "Yorum en fazla 2000 karakter olabilir." }, { status: 400 });
     if (!context) return NextResponse.json({ error: "Context gerekli." }, { status: 400 });
     if (!["chapter", "manga", "chat", "feedback"].includes(context)) return NextResponse.json({ error: "Geçersiz context." }, { status: 400 });
+
+    // Küfür filtresi
+    const cleanContent = maskProfanity(content.trim());
 
     const id = randomUUID();
     await db.insert(comments).values({
@@ -153,14 +161,34 @@ export async function POST(req: NextRequest) {
       slug: slug || null,
       chapter: chapter || null,
       parentId: parentId || null,
-      content: content.trim(),
+      content: cleanContent,
+      isSpoiler: !!isSpoiler,
     });
+
+    // Yanıtsa, ana yorumun sahibine bildirim gönder
+    if (parentId) {
+      try {
+        const [parent] = await db.select().from(comments).where(eq(comments.id, parentId));
+        if (parent && parent.userId !== session.userId) {
+          const [me] = await db.select().from(users).where(eq(users.id, session.userId));
+          await db.insert(notifications).values({
+            id: randomUUID(),
+            userId: parent.userId,
+            type: "reply",
+            title: "Yorumuna yanıt geldi",
+            message: `@${(me as any)?.username ?? "Biri"} yorumuna yanıt yazdı: "${cleanContent.slice(0, 100)}"`,
+            link: parent.slug ? `/manga/${parent.slug}${parent.chapter ? `/${parent.chapter}` : ""}` : "/sohbet",
+          });
+        }
+      } catch { /* bildirim hatası yorumu engellemesin */ }
+    }
 
     // Yeni yorumu kullanıcı bilgileriyle döndür
     const [newComment] = await db
       .select({
         id: comments.id,
         content: comments.content,
+        isSpoiler: comments.isSpoiler,
         parentId: comments.parentId,
         createdAt: comments.createdAt,
         userId: comments.userId,

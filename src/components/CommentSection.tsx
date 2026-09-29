@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { MessageSquare, ThumbsUp, Send, ChevronDown, ChevronUp, Lightbulb, MessagesSquare, Trash2, Flag, Reply, CornerDownRight } from "lucide-react";
+import { MessageSquare, ThumbsUp, Send, ChevronDown, ChevronUp, Lightbulb, MessagesSquare, Trash2, Flag, Reply, CornerDownRight, EyeOff, Eye } from "lucide-react";
 import ReportModal from "./ReportModal";
 
 interface ReplyItem {
   id: string;
   content: string;
+  isSpoiler: boolean | null;
   parentId: string | null;
   createdAt: any;
   userId: string;
@@ -21,6 +22,7 @@ interface ReplyItem {
 interface CommentItem {
   id: string;
   content: string;
+  isSpoiler: boolean | null;
   parentId: string | null;
   createdAt: any;
   userId: string;
@@ -68,8 +70,11 @@ export default function CommentSection({ type, slug, chapter }: Props) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
+  const [spoiler, setSpoiler] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
+  const [replySpoiler, setReplySpoiler] = useState(false);
+  const [revealed, setRevealed] = useState<string[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [sending, setSending] = useState(false);
   const [reportTarget, setReportTarget] = useState<{ type: "comment" | "user"; id: string; label?: string } | null>(null);
@@ -124,12 +129,13 @@ export default function CommentSection({ type, slug, chapter }: Props) {
       const res = await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: text.trim(), context, slug: slug || null, chapter: chapter || null }),
+        body: JSON.stringify({ content: text.trim(), context, slug: slug || null, chapter: chapter || null, isSpoiler: spoiler }),
       });
       const data = (await res.json()) as any;
       if (res.ok && data.comment) {
         setComments((prev) => [data.comment, ...prev]);
         setText("");
+        setSpoiler(false);
       }
     } finally {
       setSending(false);
@@ -147,12 +153,13 @@ export default function CommentSection({ type, slug, chapter }: Props) {
       const res = await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: replyText.trim(), context, slug: slug || null, chapter: chapter || null, parentId }),
+        body: JSON.stringify({ content: replyText.trim(), context, slug: slug || null, chapter: chapter || null, parentId, isSpoiler: replySpoiler }),
       });
       const data = (await res.json()) as any;
       if (res.ok && data.comment) {
         setComments((prev) => prev.map((c) => (c.id === parentId ? { ...c, replies: [...(c.replies || []), data.comment] } : c)));
         setReplyText("");
+        setReplySpoiler(false);
         setReplyTo(null);
       }
     } finally {
@@ -216,6 +223,7 @@ export default function CommentSection({ type, slug, chapter }: Props) {
   function renderComment(c: CommentItem | ReplyItem, isReply = false, parentId?: string) {
     const isLiked = liked.includes(c.id);
     const canDelete = myUserId === c.userId || myRole === "admin";
+    const hidden = !!c.isSpoiler && !revealed.includes(c.id);
     return (
       <div key={c.id} className={`flex gap-3 ${isReply ? "ml-8 mt-3 border-l-2 border-white/5 pl-3" : ""}`}>
         <Link href={c.username ? `/kullanici/${encodeURIComponent(c.username)}` : "#"} className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 hover:ring-2 hover:ring-primary/50 transition-all">
@@ -236,9 +244,31 @@ export default function CommentSection({ type, slug, chapter }: Props) {
             {c.badge && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/20 text-accent border border-accent/30 font-bold">{c.badge}</span>
             )}
+            {c.isSpoiler && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-500/15 text-yellow-400 border border-yellow-500/30 font-bold">SPOILER</span>
+            )}
             <span className="text-gray-600 text-xs">{timeAgo(c.createdAt)}</span>
           </div>
-          <p className="text-gray-300 text-sm leading-relaxed break-words">{c.content}</p>
+          {hidden ? (
+            <button
+              onClick={() => setRevealed((prev) => [...prev, c.id])}
+              className="flex items-center gap-2 text-xs text-yellow-400/80 hover:text-yellow-400 bg-yellow-500/5 border border-yellow-500/20 rounded-xl px-3 py-2 transition-colors"
+            >
+              <EyeOff className="w-3.5 h-3.5" /> Spoiler içeriyor — görmek için tıkla
+            </button>
+          ) : (
+            <>
+              {c.isSpoiler && (
+                <button
+                  onClick={() => setRevealed((prev) => prev.filter((id) => id !== c.id))}
+                  className="flex items-center gap-1 text-[11px] text-gray-600 hover:text-gray-400 mb-1"
+                >
+                  <Eye className="w-3 h-3" /> Gizle
+                </button>
+              )}
+              <p className="text-gray-300 text-sm leading-relaxed break-words">{c.content}</p>
+            </>
+          )}
           <div className="mt-2 flex items-center gap-3">
             <button
               onClick={() => handleLike(c.id, isReply ? parentId : undefined)}
@@ -273,24 +303,33 @@ export default function CommentSection({ type, slug, chapter }: Props) {
             )}
           </div>
           {!isReply && replyTo === c.id && (
-            <div className="mt-3 flex gap-2">
-              <div className="flex items-center text-gray-600"><CornerDownRight className="w-4 h-4" /></div>
-              <input
-                autoFocus
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleReply(c.id); if (e.key === "Escape") setReplyTo(null); }}
-                placeholder="Yanıtını yaz..."
-                maxLength={1000}
-                className="flex-1 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors"
-              />
-              <button
-                onClick={() => handleReply(c.id)}
-                disabled={!replyText.trim() || sending}
-                className="px-3 py-2 rounded-xl bg-primary text-black font-bold hover:scale-105 transition-transform disabled:opacity-50"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+            <div className="mt-3 space-y-2">
+              <div className="flex gap-2">
+                <div className="flex items-center text-gray-600"><CornerDownRight className="w-4 h-4" /></div>
+                <input
+                  autoFocus
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleReply(c.id); if (e.key === "Escape") setReplyTo(null); }}
+                  placeholder="Yanıtını yaz..."
+                  maxLength={1000}
+                  className="flex-1 bg-surface border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors"
+                />
+                <button
+                  onClick={() => setReplySpoiler((v) => !v)}
+                  title="Spoiler olarak işaretle"
+                  className={`px-3 py-2 rounded-xl border text-xs font-bold transition-colors ${replySpoiler ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-400" : "bg-surface border-white/10 text-gray-500 hover:text-gray-300"}`}
+                >
+                  <EyeOff className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleReply(c.id)}
+                  disabled={!replyText.trim() || sending}
+                  className="px-3 py-2 rounded-xl bg-primary text-black font-bold hover:scale-105 transition-transform disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -325,14 +364,26 @@ export default function CommentSection({ type, slug, chapter }: Props) {
                   maxLength={2000}
                   className="flex-1 bg-surface border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-primary/50 transition-colors resize-none"
                 />
-                <button
-                  type="submit"
-                  disabled={!text.trim() || sending}
-                  className="self-end px-4 py-3 rounded-xl bg-primary text-black font-bold hover:scale-105 transition-transform flex items-center gap-2 text-sm disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSpoiler((v) => !v)}
+                    title="Spoiler olarak işaretle"
+                    className={`p-3 rounded-xl border text-xs font-bold transition-colors ${spoiler ? "bg-yellow-500/20 border-yellow-500/50 text-yellow-400" : "bg-surface border-white/10 text-gray-500 hover:text-gray-300"}`}
+                  >
+                    <EyeOff className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!text.trim() || sending}
+                    className="px-4 py-3 rounded-xl bg-primary text-black font-bold hover:scale-105 transition-transform flex items-center gap-2 text-sm disabled:opacity-50 disabled:hover:scale-100"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
+              {spoiler && <p className="text-yellow-400/80 text-xs">⚠ Bu yorum spoiler olarak gizlenecek.</p>}
+              <p className="text-[11px] text-gray-600">Küfür otomatik sansürlenir, spoiler içeren yorumları işaretlemeyi unutma.</p>
             </form>
           ) : (
             <div className="bg-surface/50 border border-white/5 rounded-xl p-4 text-center">

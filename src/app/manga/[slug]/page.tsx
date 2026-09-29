@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { BookOpen, Star, Clock, Heart } from "lucide-react";
+import { BookOpen, Star, Clock } from "lucide-react";
 import mangaManifest from "@/data/manga-manifest.json";
+import { getManga, mangaCover } from "@/data/mangas";
 import CommentSection from "@/components/CommentSection";
+import FavoriteButton from "@/components/FavoriteButton";
+import RatingWidget from "@/components/RatingWidget";
 
 // Manifest'ten bölüm listesi çıkar
 function getChapters(slug: string) {
@@ -26,59 +29,20 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
   const slug = resolvedParams.slug;
 
   const chapters = getChapters(slug);
-  const mangaMetadata: Record<string, any> = {
-    "dragon-ball-1984": {
-      title: "Dragon Ball",
-      author: "Akira Toriyama",
-      rating: "9.8/10",
-      description: "Son Goku, derin dağlarda tek başına yaşayan saf ve güçlü bir çocuktur...",
-      genres: ["Aksiyon", "Macera", "Komedi", "Shounen"],
-      year: 1984,
-      coverExt: "png",
-    },
-    "chainsaw-man": {
-      title: "Chainsaw Man",
-      author: "Tatsuki Fujimoto",
-      rating: "9.5/10",
-      description: "Denji, borçlarını ödemek için iblis avlayan fakir bir gençtir. Pochita adında testere iblisi bir köpeği vardır...",
-      genres: ["Aksiyon", "Karanlık Fantezi", "Korku", "Shounen"],
-      year: 2018,
-      coverExt: "webp",
-    },
-    "demon-slayer": {
-      title: "Demon Slayer (Kimetsu no Yaiba)",
-      author: "Koyoharu Gotouge",
-      rating: "9.7/10",
-      description: "Ailesi iblisler tarafından katledilen ve kız kardeşi Nezuko bir iblise dönüşen Tanjirou'nun hikayesi...",
-      genres: ["Aksiyon", "Macera", "Doğaüstü", "Shounen"],
-      year: 2016,
-      coverExt: "jpg",
-    },
-    "naruto": {
-      title: "Naruto",
-      author: "Masashi Kishimoto",
-      rating: "9.6/10",
-      description: "İçinde dokuz kuyruklu tilki mühürlü olan Naruto Uzumaki'nin Hokage olma yolundaki serüveni...",
-      genres: ["Aksiyon", "Macera", "Dövüş Sanatları", "Shounen"],
-      year: 1999,
-      coverExt: "webp",
-    },
-  };
-
-  const meta = mangaMetadata[slug] || {
+  const meta = getManga(slug) || {
     title: "Bilinmeyen Manga",
     author: "Bilinmiyor",
-    rating: "?",
     description: "Bu manga hakkında henüz bir açıklama girilmemiş.",
     genres: ["Manga"],
-    year: "-",
+    year: "-" as any,
     coverExt: "png",
+    slug,
   };
 
   const manga = {
     ...meta,
     status: chapters.length > 0 ? "Devam Ediyor" : "Bilinmiyor",
-    cover: `/mangas/${slug}/cover.${meta.coverExt || "png"}`,
+    cover: mangaCover(meta as any),
   };
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -104,7 +68,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
               {manga.status}
             </span>
             <div className="flex items-center gap-1 text-yellow-400 text-sm font-bold">
-              <Star className="w-4 h-4 fill-current" /> {manga.rating}
+              <Star className="w-4 h-4 fill-current" /> Üye Puanı
             </div>
           </div>
 
@@ -124,7 +88,11 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
             ))}
           </div>
 
-          <p className="text-gray-300 leading-relaxed mb-8 text-sm md:text-base">{manga.description}</p>
+          <p className="text-gray-300 leading-relaxed mb-4 text-sm md:text-base">{manga.description}</p>
+
+          <div className="mb-6">
+            <RatingWidget mangaSlug={slug} />
+          </div>
 
           <div className="flex items-center gap-4 mt-auto">
             <Link
@@ -133,9 +101,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
             >
               <BookOpen className="w-5 h-5" /> İlk Bölümü Oku
             </Link>
-            <button className="w-12 h-12 flex items-center justify-center rounded-full bg-surface-light border border-white/10 text-white hover:text-red-500 hover:border-red-500/50 transition-colors">
-              <Heart className="w-5 h-5" />
-            </button>
+            <FavoriteButton mangaSlug={slug} />
           </div>
         </div>
       </div>

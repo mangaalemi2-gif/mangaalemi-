@@ -17,6 +17,10 @@ interface ProfileData {
     createdAt: any;
   };
   stats: { commentCount: number; likesReceived: number };
+  follow: { followerCount: number; followingCount: number; isFollowing: boolean };
+  xp: number;
+  level: { level: number; title: string; progress: number };
+  isSelf: boolean;
   recent: { id: string; content: string; context: string; slug: string | null; chapter: string | null; createdAt: any; likeCount: number }[];
 }
 
@@ -27,6 +31,8 @@ export default function PublicProfilePage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -38,6 +44,7 @@ export default function PublicProfilePage() {
         }
         const json = (await res.json()) as ProfileData;
         setData(json);
+        setFollowing(json.follow?.isFollowing ?? false);
       } finally {
         setLoading(false);
       }
@@ -60,6 +67,33 @@ export default function PublicProfilePage() {
 
   const { user, stats, recent } = data;
 
+  async function toggleFollow() {
+    if (followLoading) return;
+    setFollowLoading(true);
+    const prev = following;
+    setFollowing(!prev);
+    try {
+      const res = await fetch("/api/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetUserId: user.id }),
+      });
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+      const d = (await res.json()) as any;
+      if (res.ok) {
+        setFollowing(d.following);
+        setData((p) => (p ? { ...p, follow: { ...p.follow, followerCount: p.follow.followerCount + (d.following ? 1 : -1) } } : p));
+      } else setFollowing(prev);
+    } catch {
+      setFollowing(prev);
+    } finally {
+      setFollowLoading(false);
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="glass-panel rounded-3xl p-8 border border-white/10 relative overflow-hidden">
@@ -79,18 +113,36 @@ export default function PublicProfilePage() {
               {user.badge && <span className="text-[11px] px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/30 font-bold">{user.badge}</span>}
             </div>
             {user.bio ? <p className="text-gray-300 text-sm mt-2 leading-relaxed">{user.bio}</p> : <p className="text-gray-600 text-sm mt-2 italic">Henüz biyografi yazmamış.</p>}
+            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/25">
+              <span className="text-xs font-extrabold text-primary">Sv. {data.level.level} • {data.level.title}</span>
+              <span className="text-[11px] text-gray-400">{data.xp} XP</span>
+            </div>
             <div className="flex items-center justify-center sm:justify-start gap-4 mt-3 text-xs text-gray-500">
               <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {stats.commentCount} yorum</span>
-              <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {stats.likesReceived} beğeni almış</span>
+              <span className="flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {stats.likesReceived} beğeni</span>
+              <span className="flex items-center gap-1"><User className="w-3.5 h-3.5" /> {data.follow.followerCount} takipçi • {data.follow.followingCount} takip</span>
               <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> {user.createdAt ? new Date(typeof user.createdAt === "number" ? user.createdAt * 1000 : user.createdAt).toLocaleDateString("tr-TR") : ""} üye</span>
             </div>
           </div>
-          <button
-            onClick={() => setShowReport(true)}
-            className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors flex items-center gap-1.5"
-          >
-            <Flag className="w-3.5 h-3.5" /> Kullanıcıyı Bildir
-          </button>
+          <div className="flex flex-col gap-2">
+            {!data.isSelf && (
+              <button
+                onClick={toggleFollow}
+                disabled={followLoading}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all hover:scale-105 disabled:opacity-50 ${
+                  following ? "bg-surface-light border border-white/10 text-gray-300" : "bg-primary text-black"
+                }`}
+              >
+                {following ? "Takipten Çık" : "Takip Et"}
+              </button>
+            )}
+            <button
+              onClick={() => setShowReport(true)}
+              className="px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold hover:bg-red-500/20 transition-colors flex items-center gap-1.5"
+            >
+              <Flag className="w-3.5 h-3.5" /> Kullanıcıyı Bildir
+            </button>
+          </div>
         </div>
       </div>
 

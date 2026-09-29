@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { users, comments, commentLikes, polls, pollVotes, supportTickets, reports } from "@/lib/db/schema";
 import { getSession, verifyPassword, hashPassword } from "@/lib/auth";
+import { getUserXp, levelForXp } from "@/lib/levels";
 import { eq, sql } from "drizzle-orm";
 
 export const runtime = "nodejs";
@@ -47,6 +48,9 @@ export async function GET(req: NextRequest) {
       .from(supportTickets)
       .where(eq(supportTickets.userId, session.userId));
 
+    const xp = await getUserXp(db, session.userId);
+    const level = levelForXp(xp);
+
     return NextResponse.json({
       user: {
         id: me.id,
@@ -59,6 +63,8 @@ export async function GET(req: NextRequest) {
         createdAt: me.createdAt,
       },
       stats: { commentCount, likesReceived, likesGiven, pollCount, votesGiven, ticketCount },
+      xp,
+      level,
     });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
-import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy } from "lucide-react";
+import { BookOpen, Search, User, Menu, LogOut, MessagesSquare, BarChart3, LifeBuoy, Compass, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
+import NotificationsBell from "@/components/NotificationsBell";
 
 interface UserData {
   id: string;
@@ -10,8 +11,10 @@ interface UserData {
 }
 
 const NAV_LINKS = [
+  { href: "/ara", label: "Keşfet", icon: Compass },
   { href: "/sohbet", label: "Sohbet", icon: MessagesSquare },
   { href: "/anketler", label: "Anketler", icon: BarChart3 },
+  { href: "/liderlik", label: "Liderlik", icon: Trophy },
   { href: "/destek", label: "Destek", icon: LifeBuoy },
 ];
 
@@ -80,7 +83,8 @@ export default function Navbar() {
           </div>
 
           {/* Desktop User Menu */}
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3">
+            {user && <NotificationsBell />}
             {user ? (
               <>
                 <Link
@@ -116,7 +120,8 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center gap-1">
+            {user && <NotificationsBell />}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="text-gray-300 hover:text-white focus:outline-none p-2"

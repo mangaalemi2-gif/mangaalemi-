@@ -26,6 +26,9 @@ export default function Home() {
             <Link href="/anketler" className="px-8 py-3 rounded-full bg-surface-light border border-white/10 text-white font-bold hover:border-accent/50 hover:scale-105 transition-all">
               📊 Anketler
             </Link>
+            <Link href="/ara" className="px-8 py-3 rounded-full bg-surface-light border border-white/10 text-white font-bold hover:border-primary/50 hover:scale-105 transition-all">
+              🔍 Keşfet
+            </Link>
           </div>
         </div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-primary/20 blur-[100px] rounded-full pointer-events-none" />

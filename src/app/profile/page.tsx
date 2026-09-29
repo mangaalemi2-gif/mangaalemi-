@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp } from "lucide-react";
+import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp, Heart, Trophy } from "lucide-react";
 
 interface UserData {
   id: string;
@@ -42,7 +42,15 @@ interface MyComment {
   likeCount: number;
 }
 
-type Tab = "overview" | "history" | "comments" | "settings";
+type Tab = "overview" | "history" | "favorites" | "comments" | "settings";
+
+interface LevelInfo {
+  level: number;
+  title: string;
+  xp: number;
+  progress: number;
+  nextXp: number | null;
+}
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserData | null>(null);
@@ -50,6 +58,9 @@ export default function ProfilePage() {
   const [history, setHistory] = useState<ReadingEntry[]>([]);
   const [myComments, setMyComments] = useState<MyComment[]>([]);
   const [myTickets, setMyTickets] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [xp, setXp] = useState(0);
+  const [level, setLevel] = useState<LevelInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>("overview");
   const [saving, setSaving] = useState(false);
@@ -66,12 +77,13 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [meRes, profileRes, historyRes, commentsRes, ticketsRes] = await Promise.all([
+        const [meRes, profileRes, historyRes, commentsRes, ticketsRes, favRes] = await Promise.all([
           fetch("/api/auth/me"),
           fetch("/api/profile"),
           fetch("/api/reading-history"),
           fetch("/api/comments?mine=1"),
           fetch("/api/support"),
+          fetch("/api/favorites"),
         ]);
 
         if (!meRes.ok) {
@@ -90,6 +102,10 @@ export default function ProfilePage() {
             setUsername(p.user.username || "");
           }
           setStats(p.stats || null);
+          if (typeof p.xp === "number") {
+            setXp(p.xp);
+            setLevel({ level: p.level.level, title: p.level.title, xp: p.xp, progress: p.level.progress, nextXp: p.level.nextXp });
+          }
         } else {
           setBio(meData.user?.bio || "");
           setAvatarUrl(meData.user?.avatarUrl || "");
@@ -107,6 +123,10 @@ export default function ProfilePage() {
         if (ticketsRes.ok) {
           const t = (await ticketsRes.json()) as any;
           setMyTickets(t.tickets || []);
+        }
+        if (favRes.ok) {
+          const f = (await favRes.json()) as any;
+          setFavorites(f.favorites || []);
         }
       } catch {
         router.push("/login");
@@ -217,6 +237,7 @@ export default function ProfilePage() {
   const tabs: { key: Tab; label: string; icon: any }[] = [
     { key: "overview", label: "Genel Bakış", icon: User },
     { key: "history", label: "Okuma Geçmişi", icon: BookOpen },
+    { key: "favorites", label: `Favoriler (${favorites.length})`, icon: Heart },
     { key: "comments", label: `Yorumlarım (${myComments.length})`, icon: MessageSquare },
     { key: "settings", label: "Profil Ayarları", icon: Settings },
   ];
@@ -253,6 +274,17 @@ export default function ProfilePage() {
             </div>
             <p className="text-gray-400 text-sm">{user.email}</p>
             {user.bio && <p className="text-gray-300 text-sm mt-2 max-w-lg">{user.bio}</p>}
+            {level && (
+              <div className="mt-3 max-w-md">
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span className="font-extrabold text-primary flex items-center gap-1"><Trophy className="w-3.5 h-3.5" /> Sv. {level.level} • {level.title}</span>
+                  <span className="text-gray-500">{xp} XP{level.nextXp ? ` / ${level.nextXp}` : " (MAX)"}</span>
+                </div>
+                <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all" style={{ width: `${Math.round(level.progress * 100)}%` }} />
+                </div>
+              </div>
+            )}
             {stats && (
               <div className="flex items-center justify-center sm:justify-start gap-4 mt-3 text-xs text-gray-400">
                 <span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {stats.commentCount} yorum</span>
@@ -306,6 +338,8 @@ export default function ProfilePage() {
             <div className="grid gap-2">
               <Link href="/sohbet" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-primary/30 text-sm text-gray-200 transition-all">💬 Genel Sohbete Katıl</Link>
               <Link href="/anketler" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-accent/40 text-sm text-gray-200 transition-all">📊 Anketlere Oy Ver</Link>
+              <Link href="/ara" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-accent/40 text-sm text-gray-200 transition-all">🔍 Manga Keşfet</Link>
+              <Link href="/liderlik" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-yellow-500/30 text-sm text-gray-200 transition-all">🏆 Liderlik Tablosu</Link>
               <Link href="/destek" className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-yellow-500/30 text-sm text-gray-200 transition-all">🛟 Destek Talebi Oluştur</Link>
               <Link href={`/kullanici/${encodeURIComponent(user.username)}`} className="p-3 rounded-xl bg-surface-light/50 border border-white/5 hover:border-white/20 text-sm text-gray-200 transition-all">👁 Herkese Açık Profilini Gör</Link>
             </div>
@@ -365,6 +399,28 @@ export default function ProfilePage() {
                     Devam Et →
                   </span>
                 </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "favorites" && (
+        <div className="glass-panel rounded-3xl p-6 border border-white/10">
+          <h2 className="font-bold text-white mb-4">Favori Serilerin ({favorites.length})</h2>
+          {favorites.length === 0 ? (
+            <p className="text-gray-500 text-sm">Henüz favorin yok. Manga sayfalarındaki kalp butonuyla ekle. <Link href="/ara" className="text-primary hover:underline">Keşfet</Link></p>
+          ) : (
+            <div className="grid gap-3">
+              {favorites.map((f: any) => (
+                <div key={f.id} className="flex items-center justify-between p-4 rounded-xl bg-surface-light/50 border border-white/5">
+                  <Link href={`/manga/${f.mangaSlug}`} className="font-semibold text-white hover:text-primary transition-colors">
+                    {getMangaTitle(f.mangaSlug)}
+                  </Link>
+                  <Link href={`/manga/${f.mangaSlug}/1`} className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-bold border border-primary/20">
+                    Oku →
+                  </Link>
+                </div>
               ))}
             </div>
           )}

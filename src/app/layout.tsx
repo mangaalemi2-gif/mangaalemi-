@@ -25,9 +25,15 @@ export default function RootLayout({
         <footer className="w-full glass-panel py-6 text-center text-sm text-gray-400 mt-auto">
           <p>© 2026 MangaAlemi. Tüm hakları saklıdır.</p>
           <div className="flex items-center justify-center gap-4 mt-2 text-xs">
+            <a href="/ara" className="hover:text-white transition-colors">Keşfet</a>
+            <span className="text-gray-700">•</span>
             <a href="/sohbet" className="hover:text-white transition-colors">Sohbet</a>
             <span className="text-gray-700">•</span>
             <a href="/anketler" className="hover:text-white transition-colors">Anketler</a>
+            <span className="text-gray-700">•</span>
+            <a href="/liderlik" className="hover:text-white transition-colors">Liderlik</a>
+            <span className="text-gray-700">•</span>
+            <a href="/duyurular" className="hover:text-white transition-colors">Duyurular</a>
             <span className="text-gray-700">•</span>
             <a href="/destek" className="hover:text-white transition-colors">Destek</a>
           </div>
