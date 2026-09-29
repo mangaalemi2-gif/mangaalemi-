@@ -41,10 +41,10 @@ export default function ProfilePage() {
           return;
         }
 
-        const meData = await meRes.json();
+        const meData = (await meRes.json()) as any;
         setUser(meData.user);
 
-        const historyData = await historyRes.json();
+        const historyData = (await historyRes.json()) as any;
         setHistory(historyData.history || []);
       } catch (err) {
         router.push("/login");
