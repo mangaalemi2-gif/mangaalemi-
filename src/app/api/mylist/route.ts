@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
-export const STATUSES = ["reading", "completed", "on_hold", "dropped", "planning"];
+const STATUSES = ["reading", "completed", "on_hold", "dropped", "planning"];
 
 // GET: Listem (?slug= tek kontrol, ?user=username herkese açık)
 export async function GET(req: NextRequest) {

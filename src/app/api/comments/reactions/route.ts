@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
-export const ALLOWED_EMOJIS = ["🔥", "😂", "😮", "❤️", "😢", "👏"];
+const ALLOWED_EMOJIS = ["🔥", "😂", "😮", "❤️", "😢", "👏"];
 
 // GET: ?ids=a,b,c → her yorum için emoji sayıları + benim tepkilerim
 export async function GET(req: NextRequest) {
