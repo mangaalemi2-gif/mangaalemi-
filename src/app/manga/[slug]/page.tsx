@@ -108,7 +108,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
           </p>
 
           <div className="flex flex-wrap gap-2 mb-6">
-            {manga.genres.map((g) => (
+            {manga.genres.map((g: string) => (
               <span
                 key={g}
                 className="px-3 py-1 bg-surface-light text-gray-300 text-xs font-medium rounded border border-white/5 hover:border-accent transition-colors cursor-pointer"
