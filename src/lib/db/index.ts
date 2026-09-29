@@ -20,5 +20,8 @@ export function getDb(envOverride?: any) {
     throw new Error("DB bindingi bulunamadı. Lütfen wrangler.jsonc dosyasını veya bağlamı kontrol edin.");
   }
   
+  console.log("DB type:", typeof env.DB);
+  console.log("DB keys:", env.DB ? Object.keys(env.DB) : "null");
+
   return drizzle(env.DB, { schema });
 }

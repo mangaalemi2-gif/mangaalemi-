@@ -25,19 +25,55 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
   const slug = resolvedParams.slug;
 
   const chapters = getChapters(slug);
-  const isDragonBall = slug === "dragon-ball-1984";
-
-  const manga = {
-    title: isDragonBall ? "Dragon Ball" : "Bilinmeyen Manga",
-    author: "Akira Toriyama",
-    status: chapters.length > 0 ? "Devam Ediyor" : "Bilinmiyor",
-    rating: "9.8/10",
-    description:
-      "Son Goku, derin dağlarda tek başına yaşayan saf ve güçlü bir çocuktur. Bir gün Bulma adında bir kızla tanışır ve yedi efsanevi Ejder Topu'nu bulmak için inanılmaz bir maceraya atılırlar. Topları toplayan kişinin herhangi bir dileği gerçekleşecektir!",
-    cover: `/mangas/${slug}/cover.png`,
-    genres: ["Aksiyon", "Macera", "Komedi", "Fantastik", "Shounen"],
+  const mangaMetadata: Record<string, any> = {
+    "dragon-ball-1984": {
+      title: "Dragon Ball",
+      author: "Akira Toriyama",
+      rating: "9.8/10",
+      description: "Son Goku, derin dağlarda tek başına yaşayan saf ve güçlü bir çocuktur...",
+      genres: ["Aksiyon", "Macera", "Komedi", "Shounen"],
+      year: 1984,
+    },
+    "chainsaw-man": {
+      title: "Chainsaw Man",
+      author: "Tatsuki Fujimoto",
+      rating: "9.5/10",
+      description: "Denji, borçlarını ödemek için iblis avlayan fakir bir gençtir. Pochita adında testere iblisi bir köpeği vardır...",
+      genres: ["Aksiyon", "Karanlık Fantezi", "Korku", "Shounen"],
+      year: 2018,
+    },
+    "demon-slayer": {
+      title: "Demon Slayer (Kimetsu no Yaiba)",
+      author: "Koyoharu Gotouge",
+      rating: "9.7/10",
+      description: "Ailesi iblisler tarafından katledilen ve kız kardeşi Nezuko bir iblise dönüşen Tanjirou'nun hikayesi...",
+      genres: ["Aksiyon", "Macera", "Doğaüstü", "Shounen"],
+      year: 2016,
+    },
+    "naruto": {
+      title: "Naruto",
+      author: "Masashi Kishimoto",
+      rating: "9.6/10",
+      description: "İçinde dokuz kuyruklu tilki mühürlü olan Naruto Uzumaki'nin Hokage olma yolundaki serüveni...",
+      genres: ["Aksiyon", "Macera", "Dövüş Sanatları", "Shounen"],
+      year: 1999,
+    },
   };
 
+  const meta = mangaMetadata[slug] || {
+    title: "Bilinmeyen Manga",
+    author: "Bilinmiyor",
+    rating: "?",
+    description: "Bu manga hakkında henüz bir açıklama girilmemiş.",
+    genres: ["Manga"],
+    year: "-",
+  };
+
+  const manga = {
+    ...meta,
+    status: chapters.length > 0 ? "Devam Ediyor" : "Bilinmiyor",
+    cover: `/mangas/${slug}/cover.png`,
+  };
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Manga Üst Bilgi (Hero) */}
@@ -68,7 +104,7 @@ export default async function MangaDetailPage({ params }: { params: Promise<{ sl
 
           <h1 className="text-4xl md:text-5xl font-extrabold text-white mb-2">{manga.title}</h1>
           <p className="text-gray-400 text-sm mb-6 flex items-center gap-2">
-            <span className="font-medium text-white">{manga.author}</span> • Yıl: 1984
+            <span className="font-medium text-white">{manga.author}</span> • Yıl: {manga.year}
           </p>
 
           <div className="flex flex-wrap gap-2 mb-6">

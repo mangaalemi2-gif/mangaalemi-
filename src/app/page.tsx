@@ -33,19 +33,26 @@ export default function Home() {
           <h2 className="text-2xl font-bold">Yayındaki Seriler</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          <Link href="/manga/dragon-ball-1984">
-            <div className="group relative rounded-xl overflow-hidden bg-surface-light aspect-[2/3] cursor-pointer hover:shadow-[0_0_20px_rgba(157,0,255,0.3)] transition-shadow">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-              <div className="absolute bottom-0 left-0 p-4 z-20 w-full">
-                <span className="inline-block px-2 py-1 bg-accent/80 text-white text-xs font-bold rounded mb-2">Manga</span>
-                <h3 className="font-bold text-white line-clamp-2">Dragon Ball</h3>
-                <p className="text-xs text-primary mt-1">Yıl: 1984</p>
+          {[
+            { id: "dragon-ball-1984", title: "Dragon Ball", year: 1984 },
+            { id: "chainsaw-man", title: "Chainsaw Man", year: 2018 },
+            { id: "demon-slayer", title: "Demon Slayer", year: 2016 },
+            { id: "naruto", title: "Naruto", year: 1999 },
+          ].map((manga) => (
+            <Link key={manga.id} href={`/manga/${manga.id}`}>
+              <div className="group relative rounded-xl overflow-hidden bg-surface-light aspect-[2/3] cursor-pointer hover:shadow-[0_0_20px_rgba(157,0,255,0.3)] transition-shadow">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
+                <div className="absolute bottom-0 left-0 p-4 z-20 w-full">
+                  <span className="inline-block px-2 py-1 bg-accent/80 text-white text-xs font-bold rounded mb-2">Manga</span>
+                  <h3 className="font-bold text-white line-clamp-2">{manga.title}</h3>
+                  <p className="text-xs text-primary mt-1">Yıl: {manga.year}</p>
+                </div>
+                <div className="w-full h-full bg-surface group-hover:scale-110 transition-transform duration-500 flex items-center justify-center text-4xl shadow-inner">
+                  <img src={`/mangas/${manga.id}/cover.png`} alt={manga.title} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = "/mangas/dragon-ball-1984/cover.png")} />
+                </div>
               </div>
-              <div className="w-full h-full bg-orange-900 group-hover:scale-110 transition-transform duration-500 flex items-center justify-center text-4xl shadow-inner">
-                <img src="/mangas/dragon-ball-1984/cover.png" alt="Dragon Ball" className="w-full h-full object-cover" />
-              </div>
-            </div>
-          </Link>
+            </Link>
+          ))}
         </div>
       </section>
     </div>
