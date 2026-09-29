@@ -48,7 +48,7 @@ export default function Home() {
                   <p className="text-xs text-primary mt-1">Yıl: {manga.year}</p>
                 </div>
                 <div className="w-full h-full bg-surface group-hover:scale-110 transition-transform duration-500 flex items-center justify-center text-4xl shadow-inner">
-                  <img src={`/mangas/${manga.id}/cover.png`} alt={manga.title} className="w-full h-full object-cover" onError={(e) => (e.currentTarget.src = "/mangas/dragon-ball-1984/cover.png")} />
+                  <img src={`/mangas/${manga.id}/cover.png`} alt={manga.title} className="w-full h-full object-cover" />
                 </div>
               </div>
             </Link>
