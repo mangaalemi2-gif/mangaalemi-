@@ -6,6 +6,7 @@ import { Clock, CheckCircle2 } from "lucide-react";
 
 interface Chapter {
   number: number;
+  raw: string;
   pageCount: number;
 }
 
@@ -38,7 +39,7 @@ export default function MangaChapters({ slug, chapters }: { slug: string; chapte
         const isRead = ch.number in readMap;
         const isLast = ch.number === lastRead;
         return (
-          <Link key={ch.number} href={`/manga/${slug}/${ch.number}`}>
+          <Link key={ch.raw} href={`/manga/${slug}/${ch.raw}`}>
             <div className={`flex items-center justify-between p-4 rounded-xl border transition-all group ${
               isLast
                 ? "bg-primary/10 border-primary/40"
@@ -48,11 +49,11 @@ export default function MangaChapters({ slug, chapters }: { slug: string; chapte
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold transition-colors ${
                   isRead ? "bg-primary/15 text-primary" : "bg-surface text-gray-400 group-hover:text-primary group-hover:bg-primary/10"
                 }`}>
-                  {isRead ? <CheckCircle2 className="w-5 h-5" /> : ch.number}
+                  {isRead ? <CheckCircle2 className="w-5 h-5" /> : ch.raw}
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-200 group-hover:text-white transition-colors">
-                    Bölüm {ch.number}
+                    Bölüm {ch.raw}
                     {isLast && <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">KALDIĞIN YER</span>}
                   </h3>
                   <p className="text-xs text-gray-500">{ch.pageCount} sayfa{isRead ? " • okundu" : ""}</p>

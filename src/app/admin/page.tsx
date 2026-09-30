@@ -162,8 +162,8 @@ export default function AdminPage() {
         pageCount: pages.length,
       }))
       .sort((a, b) => {
-        const numA = parseInt(a.name.replace("Chapter", ""));
-        const numB = parseInt(b.name.replace("Chapter", ""));
+        const numA = parseFloat(a.name.replace("Chapter", ""));
+        const numB = parseFloat(b.name.replace("Chapter", ""));
         return numA - numB;
       });
   }

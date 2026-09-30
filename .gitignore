@@ -35,3 +35,7 @@ yarn-error.log*
 # cloudflare
 .wrangler/
 .open-next/
+
+# büyük manga arşivleri git'e girmez (R2'den sunulur)
+public/mangas/berserk/
+public/mangas/hellsing/

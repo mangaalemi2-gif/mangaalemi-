@@ -22,17 +22,18 @@ function getChapterImages(slug: string, chapter: string): string[] {
   }
 }
 
-// Manifest'ten toplam bölüm sayısını bul
-function getTotalChapters(slug: string): number {
+// Manifest'ten sıralı bölüm listesi (ondalıklı destekli)
+function getChapterList(slug: string): string[] {
   const manifest = mangaManifest as Record<string, string[]>;
-  let max = 0;
+  const raws: { num: number; raw: string }[] = [];
   for (const key of Object.keys(manifest)) {
     if (key.startsWith(slug + "/")) {
-      const num = parseInt(key.split("/")[1].replace("Chapter", ""));
-      if (!isNaN(num) && num > max) max = num;
+      const raw = key.split("/")[1].replace("Chapter", "");
+      const num = parseFloat(raw);
+      if (!isNaN(num)) raws.push({ num, raw });
     }
   }
-  return max;
+  return raws.sort((a, b) => a.num - b.num).map((r) => r.raw);
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string; chapter: string }> }): Promise<Metadata> {
@@ -49,11 +50,12 @@ export default async function ReaderPage({ params }: { params: Promise<{ slug: s
   const resolvedParams = await params;
   const { slug, chapter } = resolvedParams;
   const images: string[] = getChapterImages(slug, chapter);
-  const totalChapters = getTotalChapters(slug);
+  const chapterList = getChapterList(slug);
+  const idx = chapterList.indexOf(chapter);
 
-  const currentChapter = parseInt(chapter);
-  const prevChapter = currentChapter > 1 ? currentChapter - 1 : null;
-  const nextChapter = currentChapter < totalChapters ? currentChapter + 1 : null;
+  const currentChapter = parseFloat(chapter);
+  const prevChapter = idx > 0 ? chapterList[idx - 1] : null;
+  const nextChapter = idx >= 0 && idx < chapterList.length - 1 ? chapterList[idx + 1] : null;
 
   if (images.length === 0) {
     return (

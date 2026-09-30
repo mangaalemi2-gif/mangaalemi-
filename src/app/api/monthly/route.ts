@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 
 const MONTHS_TR = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
 
-export function monthlyQuestion(d = new Date()): string {
+function monthlyQuestion(d = new Date()): string {
   return `Ayın Serisi — ${MONTHS_TR[d.getMonth()]} ${d.getFullYear()}`;
 }
 

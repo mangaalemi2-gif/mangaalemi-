@@ -45,6 +45,24 @@ export const MANGAS: MangaMeta[] = [
     genres: ["Aksiyon", "Macera", "Dövüş Sanatları", "Shounen"],
     coverExt: "webp",
   },
+  {
+    slug: "berserk",
+    title: "Berserk",
+    author: "Kentaro Miura",
+    year: 1989,
+    description: "Kiralık kılıç Guts'un, karanlık bir fantezi dünyasında intikam ve hayatta kalma mücadelesi. Dostluk, ihanet ve kaderin efsanevi hikayesi.",
+    genres: ["Aksiyon", "Karanlık Fantezi", "Korku", "Seinen"],
+    coverExt: "webp",
+  },
+  {
+    slug: "hellsing",
+    title: "Hellsing",
+    author: "Kouta Hirano",
+    year: 1997,
+    description: "Hellsing Organizasyonu'nun vampirlere karşı savaşı ve en güçlü silahları Alucard'ın hikayesi.",
+    genres: ["Aksiyon", "Korku", "Doğaüstü", "Seinen"],
+    coverExt: "webp",
+  },
 ];
 
 export const ALL_GENRES = [...new Set(MANGAS.flatMap((m) => m.genres))].sort();

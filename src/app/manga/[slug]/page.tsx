@@ -12,17 +12,18 @@ import MyListButton from "@/components/MyListButton";
 import MangaChapters from "@/components/MangaChapters";
 import MangaNotes from "@/components/MangaNotes";
 
-// Manifest'ten bölüm listesi çıkar
+// Manifest'ten bölüm listesi çıkar (ondalıklı bölümleri destekler: 99.5, 0.01...)
 function getChapters(slug: string) {
   const manifest = mangaManifest as Record<string, string[]>;
-  const chapters: { number: number; pageCount: number }[] = [];
+  const chapters: { number: number; raw: string; pageCount: number }[] = [];
 
   for (const key of Object.keys(manifest)) {
     if (key.startsWith(slug + "/")) {
       const chapterName = key.split("/")[1]; // "Chapter1" gibi
-      const num = parseInt(chapterName.replace("Chapter", ""));
+      const raw = chapterName.replace("Chapter", "");
+      const num = parseFloat(raw);
       if (!isNaN(num)) {
-        chapters.push({ number: num, pageCount: manifest[key].length });
+        chapters.push({ number: num, raw, pageCount: manifest[key].length });
       }
     }
   }
