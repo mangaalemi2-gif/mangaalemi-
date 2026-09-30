@@ -6,6 +6,8 @@ export interface MangaMeta {
   description: string;
   genres: string[];
   coverExt: string;
+  // Doluysa resimler bu adresten gelir (örn. R2 public URL). Boşsa /mangas dizini.
+  baseUrl?: string;
 }
 
 export const MANGAS: MangaMeta[] = [
@@ -72,5 +74,6 @@ export function getManga(slug: string): MangaMeta | undefined {
 }
 
 export function mangaCover(m: MangaMeta): string {
+  if (m.baseUrl) return `${m.baseUrl}/cover.${m.coverExt}`;
   return `/mangas/${m.slug}/cover.${m.coverExt}`;
 }

@@ -42,6 +42,21 @@ const data = generateManifest();
 const outDir = path.join(__dirname, '..', 'src', 'data');
 const outPath = path.join(outDir, 'manga-manifest.json');
 
+// Uzak seriler (R2 vb.): src/data/remote-manifest.json varsa birleştir.
+// Format: { "slug/Chapter1": ["https://.../1.jpg", ...], ... }
+try {
+  const remotePath = path.join(outDir, 'remote-manifest.json');
+  if (fs.existsSync(remotePath)) {
+    const remote = JSON.parse(fs.readFileSync(remotePath, 'utf-8'));
+    for (const [key, pages] of Object.entries(remote)) {
+      data[key] = pages;
+    }
+    console.log(`Merged ${Object.keys(remote).length} remote chapters.`);
+  }
+} catch (e) {
+  console.log("Remote manifest atlandı:", e.message);
+}
+
 if (!fs.existsSync(outDir)) {
   fs.mkdirSync(outDir, { recursive: true });
 }
