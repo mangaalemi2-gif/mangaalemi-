@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
 
-export const PREF_LABELS: Record<string, string> = {
+const PREF_LABELS: Record<string, string> = {
   reply: "Yorumuma yanıt gelince",
   follow: "Biri beni takip edince",
   mention: "Biri beni etiketleyince",
