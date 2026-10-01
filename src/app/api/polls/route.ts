@@ -96,6 +96,11 @@ export async function POST(req: NextRequest) {
       endsAt: endsAtVal,
     });
 
+    try {
+      const { awardReferralBonus } = await import("@/lib/referrals");
+      await awardReferralBonus(db, session.userId, 3, "poll");
+    } catch { /* yoksay */ }
+
     return NextResponse.json({ id });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

@@ -39,13 +39,14 @@ export function levelForXp(xp: number) {
 }
 
 export async function getUserXp(db: any, userId: string): Promise<number> {
-  const [[c], [lr], [p], [v], [f], [fl]] = await Promise.all([
+  const [[c], [lr], [p], [v], [f], [fl], [me]] = await Promise.all([
     db.select({ n: sql<number>`COUNT(*)` }).from(comments).where(eq(comments.userId, userId)),
     db.select({ n: sql<number>`COUNT(*)` }).from(commentLikes).innerJoin(comments, eq(commentLikes.commentId, comments.id)).where(eq(comments.userId, userId)),
     db.select({ n: sql<number>`COUNT(*)` }).from(polls).where(eq(polls.userId, userId)),
     db.select({ n: sql<number>`COUNT(*)` }).from(pollVotes).where(eq(pollVotes.userId, userId)),
     db.select({ n: sql<number>`COUNT(*)` }).from(favorites).where(eq(favorites.userId, userId)),
     db.select({ n: sql<number>`COUNT(*)` }).from(follows).where(eq(follows.followingId, userId)),
+    db.select({ bonusXp: users.bonusXp }).from(users).where(eq(users.id, userId)),
   ]);
   const num = (r: any) => Number(r?.[0]?.n ?? 0);
   return (
@@ -54,7 +55,8 @@ export async function getUserXp(db: any, userId: string): Promise<number> {
     num(p) * XP.pollCreated +
     num(v) * XP.vote +
     num(f) * XP.favorite +
-    num(fl) * XP.follower
+    num(fl) * XP.follower +
+    Number((me as any)?.[0]?.bonusXp ?? 0)
   );
 }
 

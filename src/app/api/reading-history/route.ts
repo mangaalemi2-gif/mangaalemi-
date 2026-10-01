@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
           await bumpActivity(db, session.userId, { chapters: 1, pages: pageNumber || 1 });
           const { checkAchievements } = await import("@/lib/achievements");
           await checkAchievements(db, session.userId);
+          const { awardReferralBonus } = await import("@/lib/referrals");
+          await awardReferralBonus(db, session.userId, 10, "chapter");
         } catch { /* yoksay */ }
       }
     } else {

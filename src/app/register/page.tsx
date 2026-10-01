@@ -1,9 +1,20 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Gift } from "lucide-react";
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div className="min-h-[80vh] flex items-center justify-center text-gray-400 animate-pulse">Yükleniyor...</div>}>
+      <RegisterInner />
+    </Suspense>
+  );
+}
+
+function RegisterInner() {
+  const searchParams = useSearchParams();
+  const refCode = (searchParams.get("ref") || "").toUpperCase();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,7 +31,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password, refCode: refCode || undefined }),
       });
       const data = (await res.json()) as any;
 
@@ -51,6 +62,11 @@ export default function RegisterPage() {
           <p className="mt-2 text-center text-sm text-gray-400">
             Aramıza katıl ve maceraya başla!
           </p>
+          {refCode && (
+            <p className="mt-3 mx-auto w-fit flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 border border-primary/30 rounded-full px-3 py-1.5">
+              <Gift className="w-3.5 h-3.5" /> Davet koduyla katılıyorsun: {refCode}
+            </p>
+          )}
         </div>
 
         {error && (

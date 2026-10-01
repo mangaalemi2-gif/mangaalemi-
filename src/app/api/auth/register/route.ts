@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, email, password } = await request.json() as any;
+    const { username, email, password, refCode } = await request.json() as any;
 
     if (!username || !email || !password) {
       return NextResponse.json({ error: "Tüm alanlar zorunludur." }, { status: 400 });
@@ -16,6 +16,10 @@ export async function POST(request: NextRequest) {
 
     if (password.length < 6) {
       return NextResponse.json({ error: "Şifre en az 6 karakter olmalıdır." }, { status: 400 });
+    }
+
+    if (!/^[a-zA-Z0-9_çÇğĞıİöÖşŞüÜ]{3,30}$/.test(username)) {
+      return NextResponse.json({ error: "Kullanıcı adı harf, rakam ve _ içerebilir (3-30 karakter)." }, { status: 400 });
     }
 
     const env = (request as any).cf?.env || (globalThis as any).process?.env;
@@ -33,16 +37,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Bu kullanıcı adı zaten alınmış." }, { status: 409 });
     }
 
+    // Referans kodu geçerli mi?
+    let referrerId: string | null = null;
+    if (refCode?.trim()) {
+      const [ref] = await db.select().from(users).where(eq(users.referralCode, refCode.trim().toUpperCase()));
+      if (ref) referrerId = ref.id;
+    }
+
     const userId = generateId();
     const passwordHash = await hashPassword(password);
+    const { getOrCreateCode, awardSignupBonus } = await import("@/lib/referrals");
 
     await db.insert(users).values({
       id: userId,
-      username,
+      username: username.trim(),
       email: email.toLowerCase(),
       passwordHash,
       role: "member",
+      referredBy: referrerId,
     });
+
+    // Yeni üyeye kendi kodu + davetçiye bonus
+    try {
+      await getOrCreateCode(db, userId);
+      if (referrerId) {
+        await awardSignupBonus(db, referrerId, username.trim(), userId);
+      }
+    } catch { /* yoksay */ }
 
     // Oturum oluştur
     const sessionId = generateSessionToken();

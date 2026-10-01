@@ -13,6 +13,9 @@ export const users = sqliteTable("users", {
   badge: text("badge"),
   accent: text("accent"),
   isPrivate: integer("is_private", { mode: "boolean" }).default(false),
+  referralCode: text("referral_code").unique(),
+  referredBy: text("referred_by"),
+  bonusXp: integer("bonus_xp").default(0),
   lastSeen: integer("last_seen", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
@@ -259,6 +262,16 @@ export const mangaNotes = sqliteTable("manga_notes", {
   mangaSlug: text("manga_slug").notNull(),
   content: text("content").notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// Referans kazanç defteri
+export const referralLog = sqliteTable("referral_log", {
+  id: text("id").primaryKey(),
+  earnerId: text("earner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sourceUserId: text("source_user_id").references(() => users.id, { onDelete: "set null" }),
+  amount: integer("amount").notNull(),
+  reason: text("reason").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).default(sql`(strftime('%s', 'now'))`),
 });
 
 // Öne çıkan manga (anasayfa vitrini)

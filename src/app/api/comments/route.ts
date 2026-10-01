@@ -232,6 +232,8 @@ export async function POST(req: NextRequest) {
     try {
       const { checkAchievements } = await import("@/lib/achievements");
       await checkAchievements(db, session.userId);
+      const { awardReferralBonus } = await import("@/lib/referrals");
+      await awardReferralBonus(db, session.userId, 5, "comment");
     } catch { /* yoksay */ }
 
     // Yeni yorumu kullanıcı bilgileriyle döndür

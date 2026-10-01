@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { User, BookOpen, LogOut, Shield, MessageSquare, BarChart3, LifeBuoy, Settings, Save, ThumbsUp, Heart, Trophy, Flame, Target } from "lucide-react";
 import { ACCENTS, applyAccent } from "@/components/ThemeToggle";
+import ReferralPanel from "@/components/ReferralPanel";
 import { getManga } from "@/data/mangas";
 import mangaManifest from "@/data/manga-manifest.json";
 
@@ -565,6 +566,7 @@ export default function ProfilePage() {
 
       {tab === "overview" && (
         <div className="grid sm:grid-cols-2 gap-4">
+          <ReferralPanel />
           <div className="glass-panel rounded-2xl p-6 border border-white/10">
             <h3 className="font-bold text-white mb-3">Hızlı Erişim</h3>
             <div className="grid gap-2">

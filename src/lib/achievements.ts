@@ -88,6 +88,8 @@ export async function checkAchievements(db: any, userId: string): Promise<Award[
       message: a.description,
       link: "/profile",
     });
+    const { awardReferralBonus } = await import("./referrals");
+    await awardReferralBonus(db, userId, 25, "achievement");
   }
   return fresh;
 }
