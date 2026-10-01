@@ -55,6 +55,7 @@ export const MANGAS: MangaMeta[] = [
     description: "Kiralık kılıç Guts'un, karanlık bir fantezi dünyasında intikam ve hayatta kalma mücadelesi. Dostluk, ihanet ve kaderin efsanevi hikayesi.",
     genres: ["Aksiyon", "Karanlık Fantezi", "Korku", "Seinen"],
     coverExt: "webp",
+    baseUrl: "https://pub-ec63dc05cbb34e1ca959b6c1a5798af4.r2.dev/mangas/berserk",
   },
   {
     slug: "hellsing",
@@ -64,6 +65,7 @@ export const MANGAS: MangaMeta[] = [
     description: "Hellsing Organizasyonu'nun vampirlere karşı savaşı ve en güçlü silahları Alucard'ın hikayesi.",
     genres: ["Aksiyon", "Korku", "Doğaüstü", "Seinen"],
     coverExt: "webp",
+    baseUrl: "https://pub-ec63dc05cbb34e1ca959b6c1a5798af4.r2.dev/mangas/hellsing",
   },
 ];
 
