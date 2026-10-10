@@ -1,8 +1,10 @@
 -- Referans sistemi
 
-ALTER TABLE users ADD COLUMN referral_code TEXT UNIQUE;
+ALTER TABLE users ADD COLUMN referral_code TEXT;
 ALTER TABLE users ADD COLUMN referred_by TEXT REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE users ADD COLUMN bonus_xp INTEGER DEFAULT 0;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_referral_code ON users(referral_code);
 
 CREATE TABLE IF NOT EXISTS referral_log (
   id TEXT PRIMARY KEY,
